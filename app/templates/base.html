@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}청년 생활법률 상담 AI{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>⚖️ 청년 생활법률 상담 AI</h1>
+    <p class="sub">노동 · 주택 · 소비자 · 금융 — 현행 법령 근거로, 출처와 연락처까지</p>
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+  <footer>
+    <p>국가법령정보센터 현행 법령 기반 일반 정보 안내입니다. 구체적 사건은 전문가와 상담하세요.</p>
+  </footer>
+</body>
+</html>

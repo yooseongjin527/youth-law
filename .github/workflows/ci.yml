@@ -1,0 +1,29 @@
+# 계약 테스트 CI — 모든 PR/push에서 자동 실행.
+# SPEC.md의 계약을 코드로 강제하는 장치. 통과 없이 머지 금지.
+name: contract-tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Lint (ruff)
+        run: |
+          pip install ruff
+          ruff check .
+
+      - name: Contract tests
+        run: python -m pytest tests/ -v

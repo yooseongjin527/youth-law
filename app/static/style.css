@@ -1,0 +1,23 @@
+/* 데모용 최소 스타일 — Day6에 다듬기 */
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Noto Sans KR", sans-serif; max-width: 760px;
+       margin: 0 auto; padding: 16px; color: #222; }
+header h1 { margin-bottom: 4px; }
+.sub, footer { color: #666; font-size: 14px; }
+.ask { display: flex; gap: 8px; margin: 20px 0; }
+.ask input { flex: 1; padding: 12px; font-size: 15px; border: 1px solid #ccc; border-radius: 8px; }
+.ask button, .draft { padding: 12px 20px; border: 0; border-radius: 8px;
+       background: #2b6cb0; color: #fff; font-size: 15px; cursor: pointer; }
+.tag { background: #ebf4ff; color: #2b6cb0; padding: 3px 10px; border-radius: 6px;
+       font-size: 13px; margin-right: 4px; }
+.card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin: 14px 0; }
+.card.out { background: #fffaf0; }
+.cite { background: #f7f7f7; border-radius: 8px; padding: 10px 12px; margin: 10px 0; font-size: 14px; }
+.cite .date { color: #2f855a; font-size: 12px; margin-left: 8px; }
+.cite .snippet { font-style: italic; color: #555; margin: 6px 0; }
+.contact { background: #ebf4ff; border-radius: 8px; padding: 8px 12px; margin: 6px 0; font-size: 14px; }
+.draft { margin-top: 10px; font-size: 14px; padding: 8px 14px; }
+.draft-out { background: #fffbea; border: 1px dashed #d69e2e; border-radius: 8px;
+       padding: 12px; white-space: pre-wrap; font-size: 13px; }
+.hidden { display: none; }
+#status { color: #2b6cb0; margin: 10px 0; }

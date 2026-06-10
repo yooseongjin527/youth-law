@@ -1,0 +1,15 @@
+langgraph>=0.2
+boto3
+langchain
+pytest
+ruff
+streamlit
+langsmith
+python-dotenv
+fastapi
+uvicorn
+jinja2
+httpx
+# --- EC2/로컬 실검색용 (CI에선 불필요 — rag.py가 stub 폴백) ---
+# chromadb
+# sentence-transformers

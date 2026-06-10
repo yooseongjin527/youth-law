@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="ask">
+  <input id="q" type="text" maxlength="500"
+         placeholder="예: 알바비를 못 받았어요 / 전세 보증금을 안 돌려줘요">
+  <button id="go" onclick="consult()">상담</button>
+</section>
+
+<div id="status" class="hidden"></div>
+<div id="tags" class="hidden"></div>
+<div id="cards"></div>
+
+<script>
+async function consult() {
+  const q = document.getElementById("q").value.trim();
+  if (q.length < 2) return alert("질문을 입력해주세요");
+  setStatus("분야 분석 및 법령 검색 중...");
+  document.getElementById("cards").innerHTML = "";
+  try {
+    const res = await fetch("/api/consult", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({question: q}),
+    });
+    render(await res.json(), q);
+  } catch (e) { setStatus("오류가 발생했습니다: " + e); }
+}
+
+function setStatus(msg) {
+  const el = document.getElementById("status");
+  el.textContent = msg; el.classList.toggle("hidden", !msg);
+}
+
+function render(data, q) {
+  setStatus("");
+  const tags = document.getElementById("tags");
+  if (!data.in_scope) {
+    tags.classList.add("hidden");
+    document.getElementById("cards").innerHTML =
+      `<div class="card out">${data.final_answer}</div>`;
+    return;
+  }
+  tags.classList.remove("hidden");
+  tags.innerHTML = "이 질문을 다음 분야로 분석했습니다: " +
+    data.domains.map(d => `<span class="tag">${d.name}</span>`).join(" ");
+
+  document.getElementById("cards").innerHTML = data.answer_blocks.map(b => `
+    <div class="card">
+      <h3>【${b.domain_kr} 분야】</h3>
+      <p>${b.answer}</p>
+      ${b.citations.map(c => `
+        <div class="cite">
+          <b>${c.law_name} ${c.article}</b>
+          <span class="date">시행 ${c.enforced_date}</span>
+          <p class="snippet">"${c.text}"</p>
+          <a href="${c.source_url}" target="_blank">전문 보기 ↗</a>
+        </div>`).join("")}
+      ${b.contacts.map(ct => `
+        <div class="contact">☎ ${ct.org} <b>${ct.phone}</b> <span>(${ct.note})</span></div>`).join("")}
+      <button class="draft" onclick="makeDraft('${b.domain}', ${JSON.stringify(q).replace(/"/g, "&quot;")})">
+        📄 ${b.domain_kr} 문서 초안 생성</button>
+      <pre class="draft-out hidden" id="draft-${b.domain}"></pre>
+    </div>`).join("");
+}
+
+async function makeDraft(domain, q) {
+  const out = document.getElementById("draft-" + domain);
+  out.classList.remove("hidden"); out.textContent = "초안 작성 중...";
+  const res = await fetch("/api/draft", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({question: q, domain: domain}),
+  });
+  const d = await res.json();
+  out.textContent = d.body + "\n\n" + d.guide;
+}
+
+document.getElementById("q").addEventListener("keydown",
+  e => { if (e.key === "Enter") consult(); });
+</script>
+{% endblock %}

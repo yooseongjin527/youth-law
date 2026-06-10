@@ -1,0 +1,3 @@
+{"question": "퇴사했는데 마지막 달 월급을 안 줘요", "expected_articles": ["근로기준법 제36조"], "note": "금품 청산 14일"}
+{"question": "사장이 갑자기 내일부터 나오지 말래요", "expected_articles": ["근로기준법 제23조", "근로기준법 제26조"], "note": "해고 제한·해고 예고"}
+{"question": "최저시급보다 적게 받고 일했어요", "expected_articles": ["최저임금법 제6조"], "note": "최저임금 효력"}

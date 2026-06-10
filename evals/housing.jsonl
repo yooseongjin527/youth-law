@@ -1,0 +1,3 @@
+{"question": "계약 끝났는데 집주인이 보증금을 안 돌려줘요", "expected_articles": ["주택임대차보호법 제3조의3"], "note": "임차권등기명령"}
+{"question": "이사 가야 하는데 보증금을 못 받으면 어떡하죠", "expected_articles": ["주택임대차보호법 제3조의3"], "note": "대항력 유지"}
+{"question": "집주인이 갑자기 월세를 올려달래요", "expected_articles": ["주택임대차보호법 제7조"], "note": "차임 증감청구"}
