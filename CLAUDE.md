@@ -133,3 +133,7 @@ tests/test_contracts.py
 - ❌ 출처/시행일 누락 → ✅ citation에 항상 포함(신뢰성 차별점)
 - ❌ 다른 분야 결과 덮어쓰기 → ✅ 자기 분야 1건만
 - ❌ 옛 LangGraph API 추측 → ✅ 불확실하면 질문
+- ❌ 법령 API를 기본 UA·단발 호출 → ✅ User-Agent + 재시도 (gov API가 기본 파이썬 UA 거부·간헐 연결 리셋)
+- ❌ 조문 청킹 시 가지번호(제43조의2)·전문(장 제목) 무시 → ✅ 가지번호 반영·전문 제외 (안 그러면 중복 id로 chromadb 적재 실패)
+- ❌ (Windows) 스크립트 콘솔 인코딩 방치 → ✅ `PYTHONUTF8=1` (cp949에서 ✓ 등 출력 시 크래시)
+- ❌ os.getenv 쓰면서 .env 로드 안 함 → ✅ 진입점(config.py)에서 load_dotenv 1회
