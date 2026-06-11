@@ -51,12 +51,27 @@ tests/test_contracts.py # 계약 테스트
 ```bash
 cp .env.example .env               # 키 채우기 (팀 공유, docs/API_SETUP.md)
 pip install -r requirements.txt
-python graph.py                          # 단일/복수/범위밖 3케이스 확인 (CLI)
-python -m pytest tests/                  # 계약 검사
+python graph.py                          # 단일/복수/범위밖 3케이스 확인 (CLI, 데이터 없어도 stub로 동작)
+python -m pytest tests/                  # 계약 검사 (21 passed)
 uvicorn app.api:app --reload --port 8000 # 웹서비스 (메인화면 http://localhost:8000, API문서 /docs)
 streamlit run app/ui_streamlit.py        # 데모 UI (발표용, http://localhost:8501)
 ruff format . && ruff check .            # 스타일 통일
 ```
+
+### 실데이터로 RAG 켜기 (stub → 실검색)
+```bash
+pip install chromadb sentence-transformers   # 무거워서 requirements와 분리 (build/검색에 필요)
+# .env에 LAW_GO_KR_OC 채운 뒤 (벡터DB는 이 키 하나로 구축됨)
+python scripts/build_index.py all            # 4분야 구축 (bronze→silver→gold)
+```
+> ⚠️ **Windows**: 콘솔이 cp949라 스크립트의 `✓` 출력에서 깨질 수 있음 → `set PYTHONUTF8=1`
+> (PowerShell은 `$env:PYTHONUTF8=1`) 후 실행. 첫 실행 시 임베딩 모델 ~400MB 다운로드.
+
+### 협업 규약 (CLAUDE.md '브랜치 전략'·'커밋 규칙')
+- 변경 **5개 미만 & 공용 파일 미포함** → `main` 직접 push 허용 (push 전 로컬 `pytest` 통과 필수).
+  **5개 이상** 또는 **공용 파일**(state/graph/rag/contacts/drafter/supervisor/planner/llm/cost/pipeline) → 기능 브랜치 + PR.
+- 커밋: `<type>(<scope>): 한글 제목` (Conventional Commits). 브랜치: `<type>/<scope>-주제`.
+- 개인 메모는 `cp CLAUDE.local.md.example CLAUDE.local.md` (커밋 안 됨).
 
 ## 6일 배분
 - Day 0(시작 전): easylaw + 국가법령정보센터 API 신청(승인 1~2일)
@@ -66,9 +81,12 @@ ruff format . && ruff check .            # 스타일 통일
 - Day 5: RAG 고도화(하이브리드→리랭킹, rag.py에서 → 4분야 자동 적용) + 효과 비교
 - Day 6: Streamlit UI(answer_blocks 카드 + 초안 렌더링) + 데모 + 발표
 
-## 데이터 (검증 완료, 둘 다 공공 API·크롤링 0)
-- 메인 코퍼스(검색): easylaw 생활법령 해설 (공공데이터포털)
-- 근거 조문(citation): 국가법령정보센터 (현행 법령 + 시행일)
+## 데이터 (둘 다 공공 API·크롤링 0)
+- 근거 조문(citation·현재 벡터DB): 국가법령정보센터 (현행 법령 + 시행일) — **구축·실검색 검증 완료**
+- 메인 코퍼스(검색 보강 예정): easylaw 생활법령 해설 (공공데이터포털) — easylaw 키 수령 후 연동
+
+> **구축 현황** (`build_index.py all` 검증): 4분야 Chroma 컬렉션 적재 완료 —
+> labor 166 / housing 42 / consumer 58 / finance 812 조문. 전 분야 `DomainRAG.is_real=True`(stub 아님).
 
 | 분야 | 담당 | 핵심 법령 |
 |---|---|---|
@@ -102,8 +120,8 @@ python scripts/evaluate.py labor   # 자기 분야 스코어카드 (housing/cons
 | 축 | 지표 | 의미 |
 |---|---|---|
 | ① 평가 | hit@k, MRR | 검색이 정답 조문을 찾는가 (evals/<분야>.jsonl 기준) |
-| ③ 환각 | grounding rate, 평균 인용 | 답변이 verifier 검증을 통과하는가 |
 | ② 비용 | 토큰, $/실행 | 모델 티어링(분류=Haiku/답변=Sonnet) 효과 |
+| ③ 환각 | grounding rate, 평균 인용 | 답변이 verifier 검증을 통과하는가 |
 
 결과는 evals/results/<분야>_history.jsonl에 날짜별 누적 →
 **Day2(단순검색) vs Day5(하이브리드) 비교표가 발표의 기술 깊이 슬라이드가 된다.**

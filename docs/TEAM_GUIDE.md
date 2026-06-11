@@ -9,14 +9,14 @@
 
 | # | 리스크 | 왜 위험한가 | 해소 시점 |
 |---|---|---|---|
-| ① | ~~RAG 미구현~~ → **코드 구현 완료** (Chroma+ko-sroberta, 파이프라인 포함). 남은 리스크: 실데이터 미구축 | 키 없인 인덱스가 비어 stub 폴백으로만 돎 | **Day1: EC2에서 build_index 실행해 실검색 확인** |
+| ① | ~~RAG 미구현~~ → ~~코드 구현~~ → **실데이터 구축·실검색 검증 완료** (로컬 4분야 1078조문, is_real=True) | (해소됨) | **로컬 검증 완료 — EC2에서 `build_index.py all` 1회만 남음** |
 | ② | easylaw API 응답 구조 미확인 | load_corpus·청킹 설계가 가정 위에 있음 | **키 수령 즉시 샘플 1건 호출** |
 | ③ | Supervisor 키워드 분류 구멍 | 키워드 없는 자연어("나오지 말래요") 오탐 | Day3 Bedrock 분류 교체 (가능하면 당기기) |
 | ④ | Bedrock 실행 환경 미정 (계정/리전/모델ID/비용) | 코드보다 먼저 막히는 게 보통 이것 | **Day0~1에 invoke_model 1회 성공** |
 | ⑤ | 평가셋 없음 | Day5 "N% 개선" 발표가 불가능해짐 | **Day1~2에 분야별 평가질문 10~20개** |
 | ⑥ | ~~UI 골격 없음~~ → **구현 완료** (FastAPI 메인화면 + Streamlit 데모) | 남은 건 실데이터 확인·다듬기 | Day4 실데이터로 양쪽 UI 확인 |
 
-①은 **이미 확정·구현됨**: Chroma + jhgan/ko-sroberta-multitask (common/rag.py 실구현, pipeline/ medallion 적재, 미설치 환경은 stub 폴백). 남은 일은 EC2에서 실데이터 구축뿐 (docs/INFRA.md).
+①은 **구축·검증 완료**: Chroma + jhgan/ko-sroberta-multitask (common/rag.py 실구현, pipeline/ medallion 적재). `build_index.py all`로 4분야 구축 검증(labor166/housing42/consumer58/finance812, 전 분야 is_real=True). 빌드 블로커 3건 수정(PR #1). 남은 일은 EC2 운영본 구축뿐 (docs/INFRA.md).
 
 ---
 
@@ -37,7 +37,7 @@
    ```bash
    pip install -r requirements.txt
    python graph.py        # 3케이스 출력 확인
-   python -m pytest tests/  # 10 passed 확인
+   python -m pytest tests/  # 21 passed 확인
    ```
    "내 환경에서 안 돌아요"를 Day1에 발견하면 늦다.
 

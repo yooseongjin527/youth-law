@@ -70,12 +70,13 @@
   · 3축 루프: scripts/evaluate.py (평가 hit@k / 환각 grounding / 비용 티어링)
   · 웹서비스: app/ — FastAPI(/api/consult·/api/draft + Jinja 메인화면) + Streamlit 데모 UI, service.py 공유 로직
   · 인프라: docs/INFRA.md (EC2 $120 예산 설계)
-- 3케이스(단일/복수/범위밖) 실행 OK, 계약 테스트 9개 통과
-- 다음: ① EC2에서 build_index 실행(실데이터 구축) ② 각 전문가 답변을 Bedrock으로(common/llm.py 구현) ③ Day5 하이브리드 고도화
+- 3케이스(단일/복수/범위밖) 실행 OK, **계약 테스트 21개 통과**
+- **데이터 파이프라인 실동작 검증 완료**: `build_index.py all`로 4분야 Chroma 구축(labor166/housing42/consumer58/finance812), 전 분야 실검색(is_real=True). 빌드 블로커 3건 수정(load_dotenv·법령API UA재시도·조문가지번호 중복id, PR #1). 협업 규약 정립(CLAUDE.md 브랜치·커밋·계층·직접push).
+- 다음: ① EC2에서 build_index(운영 단일본) ② 각 전문가 답변을 Bedrock으로(common/llm.py 구현, .env BEDROCK_MODEL 채우기) ③ evaluate로 hit@k 측정 ④ Day5 하이브리드 고도화
 
 ## 3축 개선 루프
 각자 자기 에이전트를 `python scripts/evaluate.py <분야>`로 측정하며 개선:
-①평가(hit@k/MRR, evals/<분야>.jsonl 기준) ③환각(verifier grounding rate) ②비용(티어링+토큰 추적).
+①평가(hit@k/MRR, evals/<분야>.jsonl 기준) ②비용(티어링+토큰 추적) ③환각(verifier grounding rate).
 이력이 evals/results/에 날짜별 누적 → Day2 vs Day5 비교가 발표 자료.
 
 ## 함께 보는 문서

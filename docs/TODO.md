@@ -7,8 +7,9 @@
 - [ ] 킥오프: 역할 4개(A/B/C/D) + 공용 리더 1명 확정
 - [ ] 국가법령정보센터 API 신청 **먼저** (수동 승인 1~2일): open.law.go.kr → OPEN API 신청
 - [ ] easylaw API 신청: data.go.kr → "생활법령정보" 검색 → 활용신청 (자동, PC만)
-- [ ] GitHub 레포 + 브랜치 규칙 + pre-commit(ruff) + CI 동작 확인 (.github/workflows/ci.yml 동봉)
-- [ ] 4명 전원 로컬에서 graph.py + pytest 통과 확인
+- [x] ~~GitHub 레포 + 브랜치 규칙 + CI~~ → 규약 정립(CLAUDE.md 브랜치·커밋·계층·직접push 정책), CI 동작 중
+- [ ] pre-commit(ruff) 로컬 훅 설정 (CI는 동작 중)
+- [ ] 4명 전원 로컬에서 graph.py + pytest(21) 통과 확인
 - [ ] Bedrock 계정/리전/모델ID 결정 + invoke_model 1회 성공 (리스크 ④)
 
 ## 인프라 (오너 1명 — docs/INFRA.md)
@@ -18,12 +19,15 @@
 - [ ] Day4~5(여유 시): Airflow standalone + law_incremental_update DAG 활성화
 
 ## 데이터 파이프라인 (medallion — pipeline/)
-- [ ] Day1: ★동적★ pipeline/config.py LAW_LIST 법령명 확정 (샘플 호출로 정식 명칭 확인)
-- [ ] Day1: bronze 샘플 1건 호출 → silver 파싱 태그(_CANDIDATES) 실응답과 일치 확인
-- [ ] Day2: 4분야 전체 구축 + evals로 hit@k 첫 측정 (stub 0.0 → 실검색 상승 확인)
+- [x] ~~Day1: LAW_LIST 법령명 확정~~ → 8개 법령 전부 API 조회 성공 (현행 명칭 유효)
+- [x] ~~Day1: bronze 샘플 → silver 태그(_CANDIDATES) 일치 확인~~ → 실응답과 일치 검증 완료
+- [x] ~~Day1: 파이프라인 실동작 버그 수정~~ → load_dotenv 누락 / 법령API UA·재시도 / 조문가지번호·전문 중복id (3건 fix, PR #1)
+- [x] ~~Day2: 4분야 전체 구축~~ → `build_index.py all` 완료 (labor166/housing42/consumer58/finance812). 증분 멱등성(2회차 스킵)도 확인
+- [ ] Day2: evals로 hit@k 첫 측정 (stub 0.0 → 실검색 상승 확인) — 데이터 구축됐으니 evaluate만 돌리면 됨
 - [ ] Day5: 증분 갱신 데모 시나리오 (manifest 시행일 임의로 낮춰 갱신 트리거 시연)
 
 ## 담당별 (자기 분야 — 병렬)
+> 공통 0: **데이터 수집·인덱싱은 `build_index.py all`로 일괄 완료됨**(4분야 컬렉션 적재). 각 담당의 Day1 수집/Day2 인덱싱 항목은 이미 충족 — 바로 Day3(Bedrock 답변)부터 진행 가능.
 > 공통 1: Day1~2에 각자 evals/<분야>.jsonl을 **10~20문항으로 확장** (형식·예시 3개 동봉됨)
 > 공통 2: Day3부터 **매일 `python scripts/evaluate.py <분야>` 실행** — 3축(평가/환각/비용) 숫자 확인하며 개선. 이력이 자동 누적되어 발표 자료가 됨
 ### 담당 A (labor 노동) — agents/labor.py, scripts/build_index.py
@@ -55,8 +59,9 @@
 ### common/rag.py — RAG 엔진 (가장 중요, 끝나면 1순위)
 - [x] ~~벡터DB/임베딩 택1~~ → 확정·구현 완료 (Chroma + ko-sroberta, stub 폴백 포함)
 - [x] ~~백엔드 연결·index·search 구현~~ → 완료 (검색=rag.py, 적재=pipeline/gold.py)
-- [ ] Day1: 키 수령 즉시 법령 API 샘플 1건 호출 — silver 파싱 태그 일치 확인 (리스크 ②)
-- [ ] Day1~2: EC2/로컬에서 `build_index.py all` 실데이터 구축 → evaluate로 hit@k 확인
+- [x] ~~Day1: 법령 API 샘플 호출 — silver 파싱 태그 일치 확인 (리스크 ②)~~ → 완료
+- [x] ~~Day1~2: `build_index.py all` 실데이터 구축~~ → 4분야 구축·실검색(is_real=True) 확인. EC2 구축만 남음
+- [ ] 후속: RAG score 정규화 — gold.py가 컬렉션을 cosine 아닌 기본 L2로 만들어 `1-dist`가 음수(랭킹은 정상). `hnsw:space=cosine`으로 수정
 - [ ] Day5: 하이브리드 검색(BM25+임베딩)으로 고도화
 - [ ] Day5: 리랭킹(cross-encoder) 추가
 - [ ] Day5: 4분야 검색 품질 비교 측정 (발표 지표)
