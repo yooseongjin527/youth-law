@@ -18,7 +18,7 @@ class LegalCitation(TypedDict):
     article: str             # 예: "제3조의2"
     enforced_date: str       # 시행일 (예: "2024-07-19") — '현행법' 신뢰성 표시
     snippet: str             # 인용 텍스트(요약, 15어절 이내 권장)
-    source_url: str          # 국가법령정보센터/easylaw 링크
+    source_url: str          # 국가법령정보센터 링크
 
 
 class Contact(TypedDict):

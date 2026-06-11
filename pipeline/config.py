@@ -21,7 +21,6 @@ MANIFEST = DATA_DIR / "manifest.json"  # 증분 감지용: 법령별 시행일 �
 
 # ── API 키 (.env에서) ────────────────────────────────
 LAW_OC = os.getenv("LAW_GO_KR_OC", "")           # 국가법령정보센터
-EASYLAW_KEY = os.getenv("EASYLAW_SERVICE_KEY", "")  # 공공데이터포털
 
 # ── 임베딩 ───────────────────────────────────────────
 EMBED_MODEL = os.getenv("EMBED_MODEL", "jhgan/ko-sroberta-multitask")

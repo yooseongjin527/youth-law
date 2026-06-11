@@ -5,8 +5,7 @@
 
 ## Day 0 (시작 전 — 상세 절차는 TEAM_GUIDE.md)
 - [ ] 킥오프: 역할 4개(A/B/C/D) + 공용 리더 1명 확정
-- [ ] 국가법령정보센터 API 신청 **먼저** (수동 승인 1~2일): open.law.go.kr → OPEN API 신청
-- [ ] easylaw API 신청: data.go.kr → "생활법령정보" 검색 → 활용신청 (자동, PC만)
+- [ ] 국가법령정보센터 API 신청 (수동 승인 1~2일): open.law.go.kr → OPEN API 신청 (목록+본문)
 - [x] ~~GitHub 레포 + 브랜치 규칙 + CI~~ → 규약 정립(CLAUDE.md 브랜치·커밋·계층·직접push 정책), CI 동작 중
 - [ ] pre-commit(ruff) 로컬 훅 설정 (CI는 동작 중)
 - [ ] 4명 전원 로컬에서 graph.py + pytest(21) 통과 확인

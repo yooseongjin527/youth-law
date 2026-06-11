@@ -33,7 +33,7 @@ Claude Code는 여러 CLAUDE 파일을 **넓은 범위 → 좁은 범위 순으�
 | LLM | Bedrock Claude | 모델 ID는 .env |
 | 벡터DB/RAG | **Chroma (확정·구현됨)** | common/rag.py — 실구현 + 미설치 시 stub 폴백 |
 | 임베딩 | **jhgan/ko-sroberta-multitask (확정)** | pipeline/gold.py·rag.py 공유 싱글톤 |
-| 데이터 | easylaw API(메인) + 국가법령정보센터 API(근거) | 공공데이터포털 인증키 |
+| 데이터 | 국가법령정보센터 API | open.law.go.kr OC 인증키 |
 | 린트/포맷 | ruff | pyproject.toml 따름 |
 | 웹서버 | FastAPI + uvicorn | app/api.py — Pydantic 스키마 필수 |
 | UI | Streamlit(데모) + Jinja2(메인화면) | app/ui_streamlit.py, app/templates/ |
