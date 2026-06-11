@@ -11,18 +11,29 @@ API (open.law.go.kr 공동활용):
    샘플 1건으로 확인 (python -m pipeline.bronze labor 근로기준법)
 """
 import sys
+import time
 import xml.etree.ElementTree as ET
+from urllib.error import URLError
 from urllib.parse import quote
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 from pipeline.config import BRONZE_DIR, LAW_LIST, LAW_OC
 
-_BASE = "http://www.law.go.kr/DRF"
+# https 권장 + UA 필수: 법령API가 기본 파이썬 UA를 막고 간헐적으로 연결을 리셋한다.
+_BASE = "https://www.law.go.kr/DRF"
+_HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 
-def _get(url: str) -> str:
-    with urlopen(url, timeout=30) as r:
-        return r.read().decode("utf-8")
+def _get(url: str, retries: int = 4) -> str:
+    last = None
+    for i in range(retries):
+        try:
+            with urlopen(Request(url, headers=_HEADERS), timeout=30) as r:
+                return r.read().decode("utf-8")
+        except (URLError, ConnectionResetError, TimeoutError) as e:
+            last = e
+            time.sleep(2 * (i + 1))  # 백오프 — 정부 API 리셋 대비
+    raise RuntimeError(f"law.go.kr 호출 실패({retries}회): {url}") from last
 
 
 def fetch_law_meta(law_name: str) -> dict | None:
