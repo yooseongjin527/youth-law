@@ -62,9 +62,8 @@ labor housing consumer finance  │
 연락처는 반드시 common/contacts.py의 get_contacts()에서. LLM 생성 금지.
 
 ## 5. 데이터 & RAG (검증 완료)
-- 메인 코퍼스(검색): easylaw 생활법령 해설 — 공공데이터포털 API. 평어 질문과 매칭 좋음.
-- 근거 조문(citation): 국가법령정보센터 API. 현행 법령 + 시행일.
-- 둘 다 정식 Open API → 크롤링 0. ⚠️ API 신청은 Day 0(승인 1~2일).
+- 근거 조문·검색 코퍼스: 국가법령정보센터 API. 현행 법령 + 시행일.
+- 정식 Open API → 크롤링 0. ⚠️ API 신청(OC)은 Day 0(수동 승인 1~2일).
 - 검색: common/rag.py DomainRAG (Chroma 실구현·stub 폴백). 적재: pipeline/ medallion + 증분 갱신(scripts/update_laws.py, 주1회). 고도화는 rag.py에서만(4분야 자동 적용).
 
 분야별 핵심 법령:

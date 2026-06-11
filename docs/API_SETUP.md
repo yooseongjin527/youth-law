@@ -1,9 +1,9 @@
 # API_SETUP.md — 데이터 API 인증키 신청 절차
 
-> Day 0에 두 곳 모두 신청. **국가법령정보센터 먼저**(수동 승인 1~2일), easylaw는 자동(~1-2시간).
+> 국가법령정보센터 OC 키 **하나만** 신청하면 된다(수동 승인 1~2일, 평일 신청 권장).
 > 키는 한 명이 받아 팀 `.env`로 공유 (이미 .gitignore에 포함됨).
 
-## 1. 국가법령정보센터 (근거 조문·시행일) — open.law.go.kr
+## 국가법령정보센터 (근거 조문·시행일 = 검색 코퍼스) — open.law.go.kr
 1. open.law.go.kr (국가법령정보 공동활용) 회원가입/로그인
 2. 상단 메뉴 **OPEN API → OPEN API 신청**
 3. 서비스 선택: **법령 목록 + 법령 본문** (조문 수집에 둘 다 필요)
@@ -11,24 +11,17 @@
 5. 담당자 수동 승인 대기 (1~2일, 주말 끼면 더. 평일 신청 권장)
 6. 마이페이지에서 인증키(OC) 확인
 - 호출 패턴: `law.go.kr/DRF/lawSearch.do`(목록) → `lawService.do`(본문 XML)
+- ⚠️ https + User-Agent 필수 (기본 파이썬 UA 거부·간헐 연결 리셋 → pipeline/bronze.py가 재시도로 처리)
 
-## 2. easylaw 생활법령 (메인 검색 코퍼스) — data.go.kr
-1. www.data.go.kr 회원가입 + 본인인증(휴대폰/아이핀) — ⚠️ 활용신청은 **PC에서만** 가능
-2. 검색창에 "생활법령정보" (법제처) 검색 → 오픈API 선택
-3. **활용신청** 클릭 → 활용목적(학습/포트폴리오) 입력 → 제출
-4. 자동 승인 대기 (~20분-2시간)
-5. 마이페이지 > 데이터활용 > **개발계정**에서 인증키(serviceKey) 확인
-- 개발계정 트래픽: 하루 ~1,000건 — 6일 프로젝트에 충분
-
-## 3. .env 구성 (레포 루트, 커밋 금지)
+## .env 구성 (레포 루트, 커밋 금지)
 ```
 LAW_GO_KR_OC=발급받은_OC값
-EASYLAW_SERVICE_KEY=발급받은_serviceKey
 AWS_REGION=ap-northeast-2
-BEDROCK_MODEL_ID=결정한_모델ID
+BEDROCK_MODEL_MAIN=답변생성용_모델ID
+BEDROCK_MODEL_SMALL=분류용_모델ID
 ```
 
 ## 팁
-- easylaw에는 해설 + 조문 인용이 둘 다 있어, **easylaw 키만으로도 Day1~2 시작 가능**.
-  국가법령정보센터(정확한 조문·시행일)는 승인되는 대로 보강.
-- 막히면: data.go.kr 문의 1566-0025
+- **OC 키 하나로 벡터DB 전체(4분야)를 구축**한다 → `python scripts/build_index.py all`.
+  (Windows는 `set PYTHONUTF8=1` 후 실행 — 콘솔 인코딩 크래시 방지)
+- 막히면: 국가법령정보 공동활용 고객지원(open.law.go.kr) 문의.

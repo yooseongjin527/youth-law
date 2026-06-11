@@ -74,16 +74,15 @@ python scripts/build_index.py all            # 4분야 구축 (bronze→silver�
 - 개인 메모는 `cp CLAUDE.local.md.example CLAUDE.local.md` (커밋 안 됨).
 
 ## 6일 배분
-- Day 0(시작 전): easylaw + 국가법령정보센터 API 신청(승인 1~2일)
+- Day 0(시작 전): 국가법령정보센터 API(OC) 신청(수동 승인 1~2일)
 - Day 1: 골격 확정 + API 샘플 검증 + EC2 최초 구축(build_index) + SPEC §2·§3 freeze
 - Day 2: common/rag.py 벡터DB 백엔드 다같이 구현 + 각자 인덱싱(단순 검색)
 - Day 3-4: 각자 전문가 답변 생성(Bedrock) + 환각 방지 + 연락처/문서초안 연결
 - Day 5: RAG 고도화(하이브리드→리랭킹, rag.py에서 → 4분야 자동 적용) + 효과 비교
 - Day 6: Streamlit UI(answer_blocks 카드 + 초안 렌더링) + 데모 + 발표
 
-## 데이터 (둘 다 공공 API·크롤링 0)
-- 근거 조문(citation·현재 벡터DB): 국가법령정보센터 (현행 법령 + 시행일) — **구축·실검색 검증 완료**
-- 메인 코퍼스(검색 보강 예정): easylaw 생활법령 해설 (공공데이터포털) — easylaw 키 수령 후 연동
+## 데이터 (공공 API·크롤링 0)
+- 근거 조문·검색 코퍼스: 국가법령정보센터 (현행 법령 + 시행일) — **구축·실검색 검증 완료**
 
 > **구축 현황** (`build_index.py all` 검증): 4분야 Chroma 컬렉션 적재 완료 —
 > labor 166 / housing 42 / consumer 58 / finance 812 조문. 전 분야 `DomainRAG.is_real=True`(stub 아님).
