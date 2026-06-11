@@ -50,6 +50,7 @@ youth_law/
 │   ├── HANDOFF.md         #  새 채팅에 맥락 이어주는 인수인계
 │   ├── HARNESS.md         #  하네스 엔지니어링 적용 내역
 │   ├── INFRA.md           #  EC2 셋업 + $120 예산 설계 + cron/Airflow 배치
+│   ├── ONBOARDING.md      #  ★처음 시작★ 환경 셋업·데이터 빌드·확인·작업 시작
 │   ├── SPEC.md            #  ★최우선 계약★ State·에이전트 I/O (코드보다 우선)
 │   ├── STRUCTURE.md       #  (이 파일) 구조·파일 역할 지도
 │   ├── TEAM_GUIDE.md      #  협업 절차 (Day0 킥오프~Day6, 일일 리듬)
@@ -152,8 +153,9 @@ State(state.py)가 이 흐름을 관통하며 각 노드가 자기 몫만 채운
 
 ## 읽는 순서 (신규 합류자)
 1. README.md — 뭘 만드는지
-2. docs/STRUCTURE.md (이 파일) — 어디에 뭐가 있는지
-3. docs/SPEC.md — 지켜야 할 계약
-4. CLAUDE.md — 작업 규칙
-5. docs/TEAM_GUIDE.md — 언제 뭘 하는지
-6. 자기 분야 agents/<분야>.py 의 TODO 주석
+2. **docs/ONBOARDING.md — 환경 셋업·데이터 빌드·작업 시작 (실제로 손 움직이는 순서)**
+3. docs/STRUCTURE.md (이 파일) — 어디에 뭐가 있는지
+4. docs/SPEC.md — 지켜야 할 계약
+5. CLAUDE.md — 작업 규칙
+6. docs/TEAM_GUIDE.md — 언제 뭘 하는지
+7. 자기 분야 agents/<분야>.py 의 TODO 주석
