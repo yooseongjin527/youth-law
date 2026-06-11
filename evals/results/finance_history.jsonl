@@ -1,0 +1,1 @@
+{"date": "2026-06-11", "domain": "finance", "retrieval": {"n": 25, "k": 3, "hit_at_k": 0.32, "mrr": 0.227}, "grounding": {"n": 25, "grounding_rate": 1.0, "avg_citations": 3.0}, "cost": {"calls": 0, "input_tokens": 0, "output_tokens": 0, "total_cost_usd": 0, "by_task": {}}}
