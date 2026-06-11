@@ -82,8 +82,9 @@ youth_law/
 │   └── test_contracts.py  # 계약 테스트 — CI에서 매 PR 자동 실행
 │
 ├── .env.example           # 환경변수 템플릿 (cp .env.example .env)
-├── .gitignore             # 깃 제외 목록 (.env, __pycache__, data/ 등)
-├── CLAUDE.md              # ★루트 고정★ Claude Code가 자동으로 읽는 작업 규약
+├── .gitignore             # 깃 제외 목록 (.env, __pycache__, data/, CLAUDE.local.md 등)
+├── CLAUDE.md              # ★루트 고정·공통★ Claude Code가 자동으로 읽는 작업 규약 (팀 공유)
+├── CLAUDE.local.md.example # 개인 계층 템플릿 — cp 해서 CLAUDE.local.md로 (커밋 안 됨)
 ├── graph.py               # 그래프 조립 — 노드를 연결해 전체 흐름을 만듦
 ├── pyproject.toml         # ruff(린트·포맷) 설정
 ├── README.md              # 프로젝트 입구 — 개요·실행법·6일 배분
@@ -139,6 +140,8 @@ State(state.py)가 이 흐름을 관통하며 각 노드가 자기 몫만 채운
 | 린트·포맷 규칙 | pyproject.toml |
 | 깃 제외 항목 | .gitignore |
 | 환경변수(키 등) | .env.example 복사해서 .env |
+| 개인 메모·자주 쓰는 명령 | CLAUDE.local.md.example 복사해서 CLAUDE.local.md (커밋 안 됨) |
+| 협업 규약(브랜치·커밋·push) | CLAUDE.md '브랜치 전략'·'커밋 규칙' |
 
 ## 소유권 규칙 (충돌 방지)
 
