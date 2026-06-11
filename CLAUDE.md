@@ -76,9 +76,28 @@ tests/test_contracts.py
 - 구현 후 계약 테스트 통과 확인.
 
 ## 커밋 / PR (일일 절차·체크포인트는 docs/TEAM_GUIDE.md)
-- main + 기능 브랜치(feat/labor-rag 등). Squash merge.
 - 커밋 전 pre-commit(ruff)이 포맷 자동 정리 — 스타일 신경 X.
 - CI에서 pytest tests/ 통과해야 머지. 공용 파일 PR은 전원 승인.
+
+### 브랜치 전략
+- `main`은 보호 브랜치 — **직접 push 금지**. 항상 기능 브랜치 → PR → Squash merge.
+- 브랜치는 **최신 `main`에서** 분기. 작업 시작 전 `git pull --rebase origin main`.
+- 네이밍: **`<type>/<scope>-<주제>`** (kebab-case, 영문).
+  - `<type>`: 커밋 type과 동일 (feat/fix/docs/refactor/test/chore).
+  - `<scope>`: 분야(labor/housing/consumer/finance) 또는 모듈(pipeline/rag/graph/api…).
+  - 예: `feat/consumer-rag`, `fix/pipeline-dedup`, `docs/team-convention`, `refactor/rag-hybrid`.
+- **1 브랜치 = 1 관심사.** 분야 작업과 공용 파일 수정을 한 브랜치에 섞지 말 것(리뷰어가 다름).
+- 머지된 브랜치는 삭제. 길게 끌지 말고 자주 작게 머지(통합 지옥 방지).
+
+### 커밋 규칙 (Conventional Commits + 한글 제목)
+- 형식: **`<type>(<scope>): <한글 제목>`** — 제목은 명령형, 마침표 없이, ~50자 이내.
+  - 예: `feat(consumer): 청약철회 RAG 답변 생성`
+  - 예: `fix(pipeline): 조문가지번호 누락으로 인한 중복 id 수정`
+- `<type>` 종류: `feat`(기능) `fix`(버그) `docs`(문서) `refactor`(동작불변 구조개선) `test`(테스트) `chore`(빌드·설정·잡일).
+- `<scope>`: 분야명 또는 모듈명 (브랜치 scope와 일치시키면 추적 쉬움).
+- **본문(왜)**: 무엇이 아니라 **왜** 바꿨는지. 한 줄 띄우고 작성. 사소한 변경은 생략 가능.
+- **원자적 커밋**: 한 커밋엔 한 가지 논리적 변경만. 포맷/리팩터와 기능 변경을 섞지 말 것.
+- ★ 계약/스키마 변경(State·에이전트 I/O)은 `docs(spec):` 커밋으로 **SPEC PR 먼저** (SPEC.md §0).
 
 ## 안전 (의료 아니지만 법률 도메인 주의)
 - "법령 정보 안내"로 프레이밍. 단정적 법률 자문 금지 — 답변 끝에 전문가 상담 권유.
