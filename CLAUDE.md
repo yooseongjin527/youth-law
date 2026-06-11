@@ -95,18 +95,24 @@ tests/test_contracts.py
 - 커밋 전 pre-commit(ruff)이 포맷 자동 정리 — 스타일 신경 X.
 - CI에서 pytest tests/ 통과해야 머지. 공용 파일 PR은 전원 승인.
 
-### 브랜치 전략
-- **언제 PR이 필요한가 — 변경 규모로 구분:**
-  - **변경 5개 미만 & 공용 파일 미포함** → `main` 직접 push 허용. 단 **push 전 로컬 `pytest tests/` 통과 필수** (직접 push의 CI는 사후 실행이라 머지 게이트가 아님 — 깨지면 main이 이미 깨진 채로 4명이 막힌다).
-  - **5개 이상** 또는 **공용 파일 포함** → 기능 브랜치 → PR → Squash merge.
-  - ⚠️ **공용 파일(소유권 표의 ⚠️ 항목: state/graph/rag/contacts/drafter/supervisor/planner/llm/cost/pipeline …)은 변경 개수와 무관하게 항상 PR + 전원 승인.** 이 규칙이 위 둘보다 우선.
-- 직접 push든 브랜치든 **항상 최신 `main` 기준**에서 시작: `git pull --rebase origin main`.
+### 브랜치 전략 (3계층: `main` ← `dev` ← `feat/*`)
+- **`main` 직접 push 절대 금지.** 4명 누구도, 변경 규모와 무관하게 main에 직접 push하지 않는다. main은 항상 통합·검증 완료된 안정 브랜치다.
+- **`dev`가 통합 브랜치.** 모든 작업은 `feat/*`(또는 fix/docs/…) 브랜치에서 시작해 **`dev`로 PR → merge**. 평소 개발은 전부 dev 위에서 모인다.
+- **`dev` → `main`은 릴리스/체크포인트 시점에만 PR로 승격.** main 반영 전 `pytest tests/`가 dev에서 통과한 상태여야 한다. ⚠️ **main 머지 PR은 전원 승인.**
+- 흐름 요약:
+  ```
+  feat/<scope>-<주제>  ──PR──▶  dev  ──(릴리스 PR, 전원 승인)──▶  main
+  ```
+- **PR 규칙 (feat/* → dev):**
+  - **push 전 로컬 `pytest tests/` 통과 필수.** 깨진 브랜치를 PR로 올리지 말 것.
+  - Squash merge. 머지 후 브랜치 삭제. 길게 끌지 말고 자주 작게 머지(통합 지옥 방지).
+  - ⚠️ **공용 파일(소유권 표의 ⚠️ 항목: state/graph/rag/contacts/drafter/supervisor/planner/llm/cost/pipeline …) 포함 PR은 전원 승인.** 분야 전용 파일만 바꾼 PR은 해당 담당자 승인으로 충분.
+- **항상 최신 `dev` 기준**에서 시작: `git checkout dev && git pull --rebase origin dev` 후 `feat/*` 분기.
 - 네이밍(브랜치 생성 시): **`<type>/<scope>-<주제>`** (kebab-case, 영문).
   - `<type>`: 커밋 type과 동일 (feat/fix/docs/refactor/test/chore).
   - `<scope>`: 분야(labor/housing/consumer/finance) 또는 모듈(pipeline/rag/graph/api…).
   - 예: `feat/consumer-rag`, `fix/pipeline-dedup`, `docs/team-convention`, `refactor/rag-hybrid`.
 - **1 브랜치 = 1 관심사.** 분야 작업과 공용 파일 수정을 한 브랜치에 섞지 말 것(리뷰어가 다름).
-- 머지된 브랜치는 삭제. 길게 끌지 말고 자주 작게 머지(통합 지옥 방지).
 
 ### 커밋 규칙 (Conventional Commits + 한글 제목)
 - 형식: **`<type>(<scope>): <한글 제목>`** — 제목은 명령형, 마침표 없이, ~50자 이내.
