@@ -6,6 +6,12 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+# .env 로드 — config가 모두의 import 진입점이라 여기서 한 번만 부르면
+# 파이프라인·에이전트·rag 어디서든 os.getenv가 .env 값을 읽는다.
+load_dotenv()
+
 # ── 경로 (medallion 레이어) ──────────────────────────
 DATA_DIR = Path(os.getenv("DATA_DIR", "data"))
 BRONZE_DIR = DATA_DIR / "bronze"     # 원본 API 응답 (XML/JSON 그대로)

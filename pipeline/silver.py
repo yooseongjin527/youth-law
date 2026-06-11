@@ -17,8 +17,10 @@ from pipeline.config import BRONZE_DIR, SILVER_DIR
 _CANDIDATES = {
     "unit": ["조문단위", "조문"],
     "no": ["조문번호", "조번호"],
+    "branch": ["조문가지번호"],   # 제43조의2 의 "2" — 본 조문과 id 충돌 방지에 필수
     "title": ["조문제목", "조제목"],
     "content": ["조문내용", "조내용"],
+    "kind": ["조문여부"],          # "전문"=장·절 제목(조문 아님) / "조문"=실제 조
 }
 
 
@@ -40,7 +42,11 @@ def parse_law_xml(xml_text: str, law_name: str, enforced_date: str, law_id: str 
         if units:
             break
     for u in units:
+        # 장·절 제목(전문)은 조번호를 갖지만 실제 조문 아님 → 스킵(실조문과 id 충돌·노이즈 방지)
+        if _find_text(u, _CANDIDATES["kind"]) == "전문":
+            continue
         no = _find_text(u, _CANDIDATES["no"])
+        branch = _find_text(u, _CANDIDATES["branch"])
         title = _find_text(u, _CANDIDATES["title"])
         content = _find_text(u, _CANDIDATES["content"])
         # 항(項)이 하위 요소로 오는 경우 본문에 합침
@@ -50,6 +56,8 @@ def parse_law_xml(xml_text: str, law_name: str, enforced_date: str, law_id: str 
         if not (no and body):
             continue
         article = no if no.startswith("제") else f"제{no}조"
+        if branch and branch != "0":          # 제43조의2 처럼 가지조항 식별
+            article = f"{article}의{branch}"
         chunks.append({
             "law_name": law_name,
             "article": article,
