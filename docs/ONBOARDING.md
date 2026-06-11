@@ -47,13 +47,14 @@ $env:PYTHONUTF8=1 ; python -m pytest tests/ -q     # 21 passed 면 OK
 
 **(b) 실검색 동작 확인** (stub이 아니라 진짜 벡터검색인지)
 ```powershell
-$env:PYTHONUTF8=1 ; python -c "from common.rag import DomainRAG; r=DomainRAG(domain='consumer'); print('실모드:', r.is_real, '| 조문수:', r.collection.count()); [print(f\"  {c['law_name']} {c['article']}\") for c in r.search('인터넷 쇼핑 환불 청약철회', k=3)]"
+python scripts/check_rag.py consumer        # 분야 바꿔가며: labor / housing / finance
 ```
-→ `실모드: True` + 관련 조문(제17조 청약철회 등)이 뜨면 정상. (`domain`을 labor/housing/finance로 바꿔 각자 분야 확인)
+→ `실모드: True` + 관련 조문(제17조 청약철회 등)이 뜨면 정상.
+(이 스크립트는 셸 따옴표·콘솔 인코딩 문제 없이 어디서나 동작 — PYTHONUTF8 설정도 불필요)
 
 **(c) manifest 확인** (어떤 법령이 어느 시행일 기준으로 들어갔는지)
 ```powershell
-python -c "import json; [print(k, v['enforced_date']) for k,v in json.load(open('data/manifest.json',encoding='utf-8'))['laws'].items()]"
+$env:PYTHONUTF8=1 ; python -c "import json; [print(k, v['enforced_date']) for k,v in json.load(open('data/manifest.json',encoding='utf-8'))['laws'].items()]"
 ```
 
 ## 4. 작업 시작
