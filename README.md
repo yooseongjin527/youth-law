@@ -41,6 +41,7 @@ tests/test_contracts.py # 계약 테스트
 
 ## 문서 안내
 - **docs/ONBOARDING.md** — ★처음 시작★ 환경 셋업·데이터 빌드·확인·작업 시작 절차 (새 팀원 여기부터)
+- **docs/DATA_FLOW.md** — 데이터 흐름·형태 (메달리온: bronze→silver→gold→검색, 실제 데이터 예시)
 - **docs/HARNESS.md** — 하네스 엔지니어링 적용 내역 (verifier·contacts·llm·CI가 환각/실수를 구조로 차단하는 방식)
 - **docs/TEAM_GUIDE.md** — 팀 협업 시작 절차 (Day0 킥오프 → 일일 리듬 → 체크포인트). **팀원 전원 필독**
 - **docs/API_SETUP.md** — 데이터 API 인증키 신청 절차 (Day 0)

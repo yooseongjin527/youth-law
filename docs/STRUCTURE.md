@@ -47,6 +47,7 @@ youth_law/
 │
 ├── docs/                  # 가이드 모음 (특정 시점에 한 번 읽는 문서)
 │   ├── API_SETUP.md       #  데이터 API 인증키 신청 절차
+│   ├── DATA_FLOW.md       #  데이터 흐름·형태 (메달리온: bronze→silver→gold)
 │   ├── HANDOFF.md         #  새 채팅에 맥락 이어주는 인수인계
 │   ├── HARNESS.md         #  하네스 엔지니어링 적용 내역
 │   ├── INFRA.md           #  EC2 셋업 + $120 예산 설계 + cron/Airflow 배치
@@ -135,6 +136,7 @@ State(state.py)가 이 흐름을 관통하며 각 노드가 자기 몫만 채운
 | UI·API 공통 로직 | app/service.py |
 | 수집 법령 추가/변경 | pipeline/config.py 의 LAW_LIST |
 | 청킹 방식 수정 | pipeline/silver.py |
+| 데이터 흐름·형태 이해 | docs/DATA_FLOW.md |
 | 배치 주기 변경 | crontab 또는 airflow/dags/law_update_dag.py |
 | EC2·비용 | docs/INFRA.md |
 | 의존성 추가 | requirements.txt |
