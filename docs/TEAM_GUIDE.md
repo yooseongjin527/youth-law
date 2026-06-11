@@ -31,7 +31,7 @@
    - easylaw(data.go.kr → "생활법령정보" 검색 → 활용신청) — 자동 승인 ~1-2시간, PC에서만
    - 한 명 키로 팀 공유 → `.env` (이미 .gitignore에 포함)
 3. **레포 셋업**
-   - 이 골격 업로드, main 보호 + 기능 브랜치(feat/labor-rag 등) + Squash merge
+   - 이 골격 업로드 + Squash merge 설정. 브랜치/직접-push 규칙은 CLAUDE.md '브랜치 전략' 따름 (소규모 5개 미만·비공용은 직접 push 허용, 그 외·공용은 PR)
    - pre-commit(ruff) 설정, GitHub Actions CI 활성화 (.github/workflows/ci.yml 동봉됨)
 4. **전원 로컬 검증** — 4명 각자 클론 후:
    ```bash
@@ -80,10 +80,12 @@
 **공용 파일 작업은 여기서 선언** — "오늘 rag.py 제가 잡습니다" (동시 수정 충돌 방지)
 
 ### PR 규칙
+먼저 **PR이 필요한지부터** (CLAUDE.md '브랜치 전략'): 5개 미만·비공용 변경은 `main` 직접 push 허용(push 전 로컬 `pytest` 통과), 그 외/공용은 PR. PR일 때 승인 규칙:
+
 | 대상 | 승인 | 비고 |
 |---|---|---|
 | 자기 분야 파일 (agents/<분야>.py) | 리뷰 1명 | 가볍게, 빨리 |
-| 공용 파일 (state/graph/rag/contacts/drafter/supervisor/planner) | **전원 승인** | SPEC 영향 시 SPEC PR 먼저 |
+| 공용 파일 (state/graph/rag/contacts/drafter/supervisor/planner) | **전원 승인** | 개수 무관 항상 PR. SPEC 영향 시 SPEC PR 먼저 |
 | 공통 | CI(pytest) 통과 필수 | 통과 없이 머지 금지 |
 
 ### 저녁 통합 체크포인트 (전원, 짧게)
