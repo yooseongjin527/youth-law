@@ -96,9 +96,12 @@ tests/test_contracts.py
 - CI에서 pytest tests/ 통과해야 머지. 공용 파일 PR은 전원 승인.
 
 ### 브랜치 전략
-- `main`은 보호 브랜치 — **직접 push 금지**. 항상 기능 브랜치 → PR → Squash merge.
-- 브랜치는 **최신 `main`에서** 분기. 작업 시작 전 `git pull --rebase origin main`.
-- 네이밍: **`<type>/<scope>-<주제>`** (kebab-case, 영문).
+- **언제 PR이 필요한가 — 변경 규모로 구분:**
+  - **변경 5개 미만 & 공용 파일 미포함** → `main` 직접 push 허용. 단 **push 전 로컬 `pytest tests/` 통과 필수** (직접 push의 CI는 사후 실행이라 머지 게이트가 아님 — 깨지면 main이 이미 깨진 채로 4명이 막힌다).
+  - **5개 이상** 또는 **공용 파일 포함** → 기능 브랜치 → PR → Squash merge.
+  - ⚠️ **공용 파일(소유권 표의 ⚠️ 항목: state/graph/rag/contacts/drafter/supervisor/planner/llm/cost/pipeline …)은 변경 개수와 무관하게 항상 PR + 전원 승인.** 이 규칙이 위 둘보다 우선.
+- 직접 push든 브랜치든 **항상 최신 `main` 기준**에서 시작: `git pull --rebase origin main`.
+- 네이밍(브랜치 생성 시): **`<type>/<scope>-<주제>`** (kebab-case, 영문).
   - `<type>`: 커밋 type과 동일 (feat/fix/docs/refactor/test/chore).
   - `<scope>`: 분야(labor/housing/consumer/finance) 또는 모듈(pipeline/rag/graph/api…).
   - 예: `feat/consumer-rag`, `fix/pipeline-dedup`, `docs/team-convention`, `refactor/rag-hybrid`.
