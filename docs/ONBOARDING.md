@@ -38,6 +38,24 @@ python scripts/build_index.py all
 ✓ gold: law_finance 컬렉션 812건 upsert
 ```
 
+## 2-B. 데이터 공유 (S3) — 빌드 대신 받거나, 결과 올리기
+
+`data/`(벡터DB)는 git에 안 올라가므로 **S3 공용 버킷**으로 나눈다. OC 키·임베딩 재실행 없이 남이 빌드한 걸 바로 받아 쓸 수 있다.
+
+**최초 1회 (한 명만):** 버킷 생성 후 첫 빌드 업로드
+```powershell
+aws s3 mb s3://youth-law-data --region us-west-2   # 버킷명은 팀이 정함(전역 고유)
+python scripts/sync_data.py push                    # 로컬 data/ + evals/results → S3
+```
+**나머지 팀원:** `.env`에 `S3_DATA_BUCKET=youth-law-data` 넣고 받기
+```powershell
+python scripts/sync_data.py pull        # S3 → 로컬 (data/ + 평가결과)
+```
+- 자기 분야 빌드/평가 후 다시 올리기: `python scripts/sync_data.py push`
+- `data`만 / `evals`만: 끝에 `data` 또는 `evals`. 완전 미러: `--mirror`(원본에 없는 로컬 파일 삭제)
+- 사전: `aws configure`로 자격증명 1회 설정.
+> 즉 **"빌드는 한 명, 나머지는 pull"** 도 되고, 각자 빌드 후 자기 분야만 push해 합쳐도 된다.
+
 ## 3. 데이터·RAG 확인
 
 **(a) 계약 테스트**
