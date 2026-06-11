@@ -16,7 +16,7 @@
 ## .env 구성 (레포 루트, 커밋 금지)
 ```
 LAW_GO_KR_OC=발급받은_OC값
-AWS_REGION=ap-northeast-2
+AWS_REGION=us-west-2
 BEDROCK_MODEL_MAIN=답변생성용_모델ID
 BEDROCK_MODEL_SMALL=분류용_모델ID
 ```

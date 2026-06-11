@@ -8,9 +8,9 @@
 무엇을 측정하나:
   [축① 평가]   hit@k, MRR — 평가셋(evals/<분야>.jsonl) 질문으로 검색했을 때
                정답 조문이 top-k에 들어오는 비율
+  [축② 비용]   이번 평가 실행 동안의 토큰·비용 (common/cost.py tracker)
   [축③ 환각]   grounding rate — 에이전트 답변이 verifier 검증을 통과하는 비율
                + 평균 인용 수 (근거가 얼마나 붙는가)
-  [축② 비용]   이번 평가 실행 동안의 토큰·비용 (common/cost.py tracker)
 
 결과는 evals/results/<분야>_history.jsonl에 날짜와 함께 누적
 → Day2(단순검색) vs Day5(하이브리드) 비교가 발표 자료가 된다.
@@ -101,16 +101,16 @@ def eval_grounding(domain: str) -> dict:
 
 def run(domain: str) -> dict:
     tracker.reset()  # 이번 평가 실행의 비용만 측정
-    retrieval = eval_retrieval(domain)
-    grounding = eval_grounding(domain)
-    cost = tracker.report()  # [축② 비용] 위 실행 중 발생한 LLM 호출 비용
+    retrieval = eval_retrieval(domain)          # 축① 평가
+    grounding = eval_grounding(domain)          # 축③ 환각 (LLM 호출 발생)
+    cost = tracker.report()                     # 축② 비용 — grounding의 LLM 호출 누적분이라 그 뒤에 측정
 
-    result = {
+    result = {                                  # 표시·저장은 축 번호순(①②③)
         "date": date.today().isoformat(),
         "domain": domain,
         "retrieval": retrieval,   # 축① 평가
-        "grounding": grounding,   # 축③ 환각
         "cost": cost,             # 축② 비용
+        "grounding": grounding,   # 축③ 환각
     }
 
     # 이력 누적 → 개선 추이 (Day2 vs Day5 비교가 발표 자료)
@@ -127,8 +127,8 @@ def print_scorecard(r: dict):
     print(f"{'='*52}")
     ret, grd, cst = r["retrieval"], r["grounding"], r["cost"]
     print(f"  축① 평가   hit@{ret.get('k','-')}: {ret['hit_at_k']}   MRR: {ret['mrr']}   (n={ret['n']})")
-    print(f"  축③ 환각   grounding rate: {grd['grounding_rate']}   평균 인용: {grd['avg_citations']}")
     print(f"  축② 비용   호출 {cst['calls']}회  토큰 {cst['input_tokens']}+{cst['output_tokens']}  ${cst['total_cost_usd']}")
+    print(f"  축③ 환각   grounding rate: {grd['grounding_rate']}   평균 인용: {grd['avg_citations']}")
     if cst["calls"] == 0:
         print("            (LLM 호출 0회 — Bedrock 연결 전 stub 상태)")
     print(f"  → 이력 저장: evals/results/{r['domain']}_history.jsonl")

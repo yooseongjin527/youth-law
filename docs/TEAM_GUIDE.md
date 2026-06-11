@@ -92,7 +92,7 @@
 이 네 번의 "다같이 돌려보기"가 통합 지옥을 막는다.
 
 ### 매일 오후: 3축 측정 (Day3부터)
-각자 `python scripts/evaluate.py <분야>` 1회 이상 — 평가(hit@k)/환각(grounding)/비용($) 확인.
+각자 `python scripts/evaluate.py <분야>` 1회 이상 — 평가(hit@k)/비용($)/환각(grounding) 확인.
 숫자가 어제보다 나빠졌으면 그 변경은 롤백 후보. 이력은 자동 누적(evals/results/).
 
 ### 손이 빈 사람

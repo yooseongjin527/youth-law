@@ -66,7 +66,7 @@
   · RAG: common/rag.py **Chroma 실구현** (라이브러리/데이터 없으면 stub 폴백 — CI 안전)
   · 데이터 파이프라인: pipeline/ medallion (bronze→silver→gold) + 증분 감지(detect) + scripts/update_laws.py 배치 + Airflow @weekly DAG
   · 하네스: verifier(근거 검증)·contacts(연락처 환각0)·llm(구조화 출력 강제)
-  · 3축 루프: scripts/evaluate.py (평가 hit@k / 환각 grounding / 비용 티어링)
+  · 3축 루프: scripts/evaluate.py (평가 hit@k / 비용 티어링 / 환각 grounding)
   · 웹서비스: app/ — FastAPI(/api/consult·/api/draft + Jinja 메인화면) + Streamlit 데모 UI, service.py 공유 로직
   · 인프라: docs/INFRA.md (EC2 $120 예산 설계)
 - 3케이스(단일/복수/범위밖) 실행 OK, **계약 테스트 21개 통과**
