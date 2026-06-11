@@ -76,7 +76,7 @@ youth_law/
 ├── scripts/               # 실행 스크립트
 │   ├── __init__.py        #  패키지 표시(빈 파일)
 │   ├── build_index.py     #  최초 전체 구축 (pipeline 위임: bronze→silver→gold)
-│   ├── evaluate.py        #  3축 스코어카드 (평가/환각/비용) + 이력 누적
+│   ├── evaluate.py        #  3축 스코어카드 (평가/비용/환각) + 이력 누적
 │   └── update_laws.py     #  증분 배치 진입점 — cron/Airflow가 호출
 │
 ├── tests/

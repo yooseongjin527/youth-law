@@ -28,7 +28,7 @@
 ## 담당별 (자기 분야 — 병렬)
 > 공통 0: **데이터 수집·인덱싱은 `build_index.py all`로 일괄 완료됨**(4분야 컬렉션 적재). 각 담당의 Day1 수집/Day2 인덱싱 항목은 이미 충족 — 바로 Day3(Bedrock 답변)부터 진행 가능.
 > 공통 1: Day1~2에 각자 evals/<분야>.jsonl을 **10~20문항으로 확장** (형식·예시 3개 동봉됨)
-> 공통 2: Day3부터 **매일 `python scripts/evaluate.py <분야>` 실행** — 3축(평가/환각/비용) 숫자 확인하며 개선. 이력이 자동 누적되어 발표 자료가 됨
+> 공통 2: Day3부터 **매일 `python scripts/evaluate.py <분야>` 실행** — 3축(평가/비용/환각) 숫자 확인하며 개선. 이력이 자동 누적되어 발표 자료가 됨
 ### 담당 A (labor 노동) — agents/labor.py, scripts/build_index.py
 - [ ] Day1: 노동 데이터 수집 (근로기준법·최저임금법) → load_corpus
 - [ ] Day2: labor 컬렉션 인덱싱 (python scripts/build_index.py labor)
