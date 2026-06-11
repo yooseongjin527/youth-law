@@ -42,19 +42,30 @@ python scripts/build_index.py all
 
 `data/`(벡터DB)는 git에 안 올라가므로 **S3 공용 버킷**으로 나눈다. OC 키·임베딩 재실행 없이 남이 빌드한 걸 바로 받아 쓸 수 있다.
 
-**최초 1회 (한 명만):** 버킷 생성 후 첫 빌드 업로드
+> ⚠️ **충돌 주의**: `silver/<분야>`·`bronze/<분야>`·`evals` 는 분야별 파일이라 각자 올려도 안 겹치지만,
+> **chroma(벡터DB)·manifest 는 4분야 한 덩어리**라 여러 명이 올리면 덮어쓴다.
+> → chroma는 **'빌더' 한 명(또는 EC2)만** 올린다. 그래서 명령이 스코프로 나뉨.
+
+**최초 1회 (한 명만):** 버킷 생성
 ```powershell
 aws s3 mb s3://youth-law-data --region us-west-2   # 버킷명은 팀이 정함(전역 고유)
-python scripts/sync_data.py push                    # 로컬 data/ + evals/results → S3
 ```
-**나머지 팀원:** `.env`에 `S3_DATA_BUCKET=youth-law-data` 넣고 받기
+**받기 (모두, 안전):** `.env`에 `S3_DATA_BUCKET` 넣고
 ```powershell
-python scripts/sync_data.py pull        # S3 → 로컬 (data/ + 평가결과)
+python scripts/sync_data.py pull        # S3 → 로컬 (통합 chroma + 전 분야 silver/평가)
 ```
-- 자기 분야 빌드/평가 후 다시 올리기: `python scripts/sync_data.py push`
-- `data`만 / `evals`만: 끝에 `data` 또는 `evals`. 완전 미러: `--mirror`(원본에 없는 로컬 파일 삭제)
-- 사전: `aws configure`로 자격증명 1회 설정.
-> 즉 **"빌드는 한 명, 나머지는 pull"** 도 되고, 각자 빌드 후 자기 분야만 push해 합쳐도 된다.
+**자기 분야 산출물 올리기 (각자):** `.env`의 `MY_DOMAIN` 사용(또는 분야 직접 지정)
+```powershell
+python scripts/sync_data.py push mine            # 내 분야 silver/bronze/evals만
+python scripts/sync_data.py push mine consumer   # 분야 직접 지정도 가능
+```
+**통합 벡터DB 올리기 (빌더 1명만):** pull로 전 분야 silver 모은 뒤
+```powershell
+python scripts/build_index.py all                # 4분야 통합 빌드
+python scripts/sync_data.py push corpus          # chroma + manifest 올림
+```
+> 정리: **각자 `push mine` → 빌더가 `pull` 후 통합 빌드 → `push corpus` → 나머지 `pull`.**
+> 사전: `aws configure`로 자격증명 1회 설정.
 
 ## 3. 데이터·RAG 확인
 

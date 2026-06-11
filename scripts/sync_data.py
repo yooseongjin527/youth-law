@@ -1,21 +1,24 @@
-"""S3로 빌드 산출물(벡터DB)·평가결과를 팀원 간 공유 — 동기화 도구.
+"""S3로 데이터·평가결과를 팀원 간 공유 — 충돌 없는 스코프 동기화.
 
-data/ 는 .gitignore라 git으론 못 나눈다. 대신 S3 버킷을 "공용 창고"로 써서
-한 명이 빌드한 결과를 나머지가 받아 쓰고(빌드/OC키 불필요), 평가결과도 한 곳에 모은다.
+⚠️ 왜 스코프를 나누나:
+  - silver/<분야>.jsonl, bronze/<분야>/, evals/results/<분야>_* 는 '분야별 파일'이라
+    각자 올려도 안 겹친다(합쳐짐).
+  - 그러나 chroma(벡터DB)·manifest.json 은 4분야가 '한 덩어리'라, 여러 명이 올리면
+    서로 덮어쓴다. → chroma+manifest는 '빌더' 한 명(또는 EC2)만 push.
 
-사용:
-  python scripts/sync_data.py pull          # S3 → 로컬 (받기, 기본 data+evals)
-  python scripts/sync_data.py push          # 로컬 → S3 (올리기)
-  python scripts/sync_data.py pull data     # 벡터DB·코퍼스만
-  python scripts/sync_data.py push evals    # 평가결과(evals/results)만
+권장 흐름:
+  1) 각자:   python scripts/sync_data.py push mine     # 내 분야 silver/bronze/evals만
+  2) 빌더:   python scripts/sync_data.py pull          # 모두 받고
+             python scripts/build_index.py all         # 4분야 통합 빌드
+             python scripts/sync_data.py push corpus   # chroma+manifest 올림
+  3) 나머지: python scripts/sync_data.py pull          # 통합 chroma 받기(4분야 다 들어옴)
 
-사전 준비:
-  - aws CLI + 자격증명 (aws configure 또는 환경변수)
-  - 버킷 1회 생성(한 명):  aws s3 mb s3://<버킷명> --region us-west-2
-  - .env 에  S3_DATA_BUCKET=<버킷명>   (팀 공유)
+명령:
+  pull                 # S3 → 로컬 (data/ 전체 + evals/results 전체)
+  push mine [분야]     # 내 분야 산출물만 올림 (분야 생략 시 .env의 MY_DOMAIN)
+  push corpus          # chroma + manifest 올림 (빌더 전용)
 
-기본은 '추가(additive)' 동기화 — 로컬에만 있는 파일을 지우지 않는다.
-완전 미러(원본에 없는 건 삭제)를 원하면 끝에 --mirror 를 붙인다.
+사전: aws CLI + 자격증명(aws configure), 버킷 생성, .env 의 S3_DATA_BUCKET.
 """
 import os
 import subprocess
@@ -28,38 +31,57 @@ load_dotenv()
 
 BUCKET = os.getenv("S3_DATA_BUCKET", "").strip()
 REGION = os.getenv("AWS_REGION", "us-west-2")
-
-# scope: (로컬 경로, S3 prefix)
-TARGETS = {
-    "data": ("data", "data"),               # bronze/silver/chroma/manifest
-    "evals": ("evals/results", "evals/results"),  # 3축 평가 이력
-}
+DOMAINS = ["labor", "housing", "consumer", "finance"]
 
 
-def sync(direction: str, scope: str, mirror: bool):
-    if not BUCKET:
-        sys.exit("S3_DATA_BUCKET 가 .env에 없습니다. 예: S3_DATA_BUCKET=youth-law-data")
-    scopes = list(TARGETS) if scope == "all" else [scope]
-    for s in scopes:
-        local, prefix = TARGETS[s]
-        s3 = f"s3://{BUCKET}/{prefix}/"
-        os.makedirs(local, exist_ok=True)
-        src, dst = (s3, local) if direction == "pull" else (local, s3)
-        cmd = ["aws", "s3", "sync", src, dst, "--region", REGION]
-        if mirror:
-            cmd.append("--delete")
-        print(f"[{direction}] {src}  ->  {dst}" + ("  (--delete)" if mirror else ""))
-        subprocess.run(cmd, check=True)
-    print("완료.")
+def _sync(src, dst, filters):
+    cmd = ["aws", "s3", "sync", src, dst, "--region", REGION] + filters
+    print("  $", " ".join(cmd))
+    subprocess.run(cmd, check=True)
+
+
+def pull():
+    """S3 → 로컬: 전체 받기 (충돌 없음 — 받기는 안전)."""
+    _sync(f"s3://{BUCKET}/data/", "data", [])
+    _sync(f"s3://{BUCKET}/evals/results/", "evals/results", [])
+
+
+def push_mine(domain):
+    """내 분야 산출물만 올림 (분야별 파일 → 다른 사람과 안 겹침)."""
+    print(f"[push mine] 분야={domain} — silver/bronze/evals만 (chroma 안 건드림)")
+    _sync("data", f"s3://{BUCKET}/data",
+          ["--exclude", "*", "--include", f"silver/{domain}.jsonl",
+           "--include", f"bronze/{domain}/*"])
+    _sync("evals/results", f"s3://{BUCKET}/evals/results",
+          ["--exclude", "*", "--include", f"{domain}_*"])
+
+
+def push_corpus():
+    """chroma + manifest 올림 — ⚠️ 빌더 한 명만(통합 빌드 후)."""
+    print("[push corpus] chroma + manifest — 빌더 전용(여러 명이 하면 덮어씀)")
+    _sync("data", f"s3://{BUCKET}/data",
+          ["--exclude", "*", "--include", "chroma/*", "--include", "manifest.json"])
 
 
 if __name__ == "__main__":
-    args = [a for a in sys.argv[1:] if a != "--mirror"]
-    mirror = "--mirror" in sys.argv
+    if not BUCKET:
+        sys.exit("S3_DATA_BUCKET 가 .env에 없습니다. 예: S3_DATA_BUCKET=youth-law-data")
+    args = sys.argv[1:]
     if not args or args[0] not in ("pull", "push"):
-        sys.exit("사용: python scripts/sync_data.py <pull|push> [data|evals|all] [--mirror]")
-    direction = args[0]
-    scope = args[1] if len(args) > 1 else "all"
-    if scope not in ("data", "evals", "all"):
-        sys.exit("scope 는 data | evals | all")
-    sync(direction, scope, mirror)
+        sys.exit("사용: python scripts/sync_data.py <pull | push mine [분야] | push corpus>")
+
+    if args[0] == "pull":
+        pull()
+    else:  # push
+        scope = args[1] if len(args) > 1 else ""
+        if scope == "corpus":
+            push_corpus()
+        elif scope == "mine":
+            domain = args[2] if len(args) > 2 else os.getenv("MY_DOMAIN", "").strip()
+            if domain not in DOMAINS:
+                sys.exit(f"분야를 지정하세요: push mine <{'|'.join(DOMAINS)}> "
+                         f"(또는 .env에 MY_DOMAIN=)")
+            push_mine(domain)
+        else:
+            sys.exit("push 스코프: 'mine [분야]' 또는 'corpus'")
+    print("완료.")
