@@ -7,7 +7,7 @@
     서로 덮어쓴다. → chroma+manifest는 '빌더' 한 명(또는 EC2)만 push.
 
 권장 흐름:
-  1) 각자:   python scripts/sync_data.py push mine     # 내 분야 silver/bronze/evals만
+  1) 각자:   python scripts/sync_data.py push mine consumer  # 내 분야 silver/bronze/evals만
   2) 빌더:   python scripts/sync_data.py pull          # 모두 받고
              python scripts/build_index.py all         # 4분야 통합 빌드
              python scripts/sync_data.py push corpus   # chroma+manifest 올림
@@ -15,7 +15,7 @@
 
 명령:
   pull                 # S3 → 로컬 (data/ 전체 + evals/results 전체)
-  push mine [분야]     # 내 분야 산출물만 올림 (분야 생략 시 .env의 MY_DOMAIN)
+  push mine <분야>     # 내 분야 산출물만 올림 (예: push mine consumer)
   push corpus          # chroma + manifest 올림 (빌더 전용)
 
 사전: aws CLI + 자격증명(aws configure), 버킷 생성, .env 의 S3_DATA_BUCKET.
@@ -77,10 +77,9 @@ if __name__ == "__main__":
         if scope == "corpus":
             push_corpus()
         elif scope == "mine":
-            domain = args[2] if len(args) > 2 else os.getenv("MY_DOMAIN", "").strip()
+            domain = args[2] if len(args) > 2 else ""
             if domain not in DOMAINS:
-                sys.exit(f"분야를 지정하세요: push mine <{'|'.join(DOMAINS)}> "
-                         f"(또는 .env에 MY_DOMAIN=)")
+                sys.exit(f"분야를 지정하세요: push mine <{'|'.join(DOMAINS)}>")
             push_mine(domain)
         else:
             sys.exit("push 스코프: 'mine [분야]' 또는 'corpus'")

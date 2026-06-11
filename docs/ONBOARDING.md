@@ -54,10 +54,9 @@ aws s3 mb s3://youth-law-data --region us-west-2   # 버킷명은 팀이 정함(
 ```powershell
 python scripts/sync_data.py pull        # S3 → 로컬 (통합 chroma + 전 분야 silver/평가)
 ```
-**자기 분야 산출물 올리기 (각자):** `.env`의 `MY_DOMAIN` 사용(또는 분야 직접 지정)
+**자기 분야 산출물 올리기 (각자):** 명령에 분야를 직접 지정
 ```powershell
-python scripts/sync_data.py push mine            # 내 분야 silver/bronze/evals만
-python scripts/sync_data.py push mine consumer   # 분야 직접 지정도 가능
+python scripts/sync_data.py push mine consumer   # 내 분야 silver/bronze/evals만 (분야는 본인 것으로)
 ```
 **통합 벡터DB 올리기 (빌더 1명만):** pull로 전 분야 silver 모은 뒤
 ```powershell
