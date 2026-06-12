@@ -200,6 +200,34 @@ def test_silver_chunking():
     assert c["source_url"]
 
 
+def test_silver_chunking_항본문_누락방지():
+    """긴 조문은 조문내용에 헤더만 오고 실제 본문은 항·호 하위요소에 온다.
+    조문내용(헤더)만 본문으로 쓰면 청약철회 같은 핵심 조문이 빈 껍데기가 된다 → 누락 금지."""
+    from pipeline.silver import parse_law_xml
+    xml = """<법령>
+      <조문단위>
+        <조문번호>17</조문번호>
+        <조문여부>조문</조문여부>
+        <조문제목>청약철회등</조문제목>
+        <조문내용>제17조(청약철회등)</조문내용>
+        <항>
+          <항번호>①</항번호>
+          <항내용>① 소비자는 다음 각 호의 기간 이내에 청약철회를 할 수 있다.</항내용>
+          <호>
+            <호번호>1.</호번호>
+            <호내용>1. 계약내용에 관한 서면을 받은 날부터 7일</호내용>
+          </호>
+        </항>
+      </조문단위>
+    </법령>"""
+    chunks = parse_law_xml(xml, "전자상거래법", "20260721")
+    assert len(chunks) == 1
+    c = chunks[0]
+    assert c["article"] == "제17조"
+    assert "청약철회를 할 수 있다" in c["text"]   # 항 본문 누락 금지
+    assert "7일" in c["text"]                      # 호 본문 누락 금지
+
+
 def test_api_consult():
     """웹서비스: /api/consult 가 분류·카드·검증리포트를 반환."""
     from fastapi.testclient import TestClient

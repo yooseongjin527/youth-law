@@ -30,7 +30,14 @@ def load_gold(domain: str) -> int:
         return 0
 
     client = chromadb.PersistentClient(path=str(CHROMA_DIR))
-    col = client.get_or_create_collection(f"law_{domain}")
+    # 코사인 거리로 (재)생성 — 문장 임베딩(ko-sroberta)은 코사인이 표준이고,
+    # 기본값 L2는 비정규화 벡터에서 score(=1-dist)가 음수 쓰레기값이 된다.
+    # 도메인 전체를 매번 재적재하므로 삭제 후 재생성이 안전(삭제된 조문도 정리됨).
+    try:
+        client.delete_collection(f"law_{domain}")
+    except Exception:
+        pass
+    col = client.create_collection(f"law_{domain}", metadata={"hnsw:space": "cosine"})
 
     ids = [f"{c['law_name']}_{c['article']}" for c in chunks]
     texts = [c["text"] for c in chunks]
