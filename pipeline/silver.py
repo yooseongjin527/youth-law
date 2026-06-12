@@ -21,6 +21,7 @@ _CANDIDATES = {
     "title": ["조문제목", "조제목"],
     "content": ["조문내용", "조내용"],
     "kind": ["조문여부"],          # "전문"=장·절 제목(조문 아님) / "조문"=실제 조
+    "subcontent": ["항내용", "호내용", "목내용"],  # 긴 조문 본문은 항·호·목 하위요소에 온다
 }
 
 
@@ -49,10 +50,12 @@ def parse_law_xml(xml_text: str, law_name: str, enforced_date: str, law_id: str 
         branch = _find_text(u, _CANDIDATES["branch"])
         title = _find_text(u, _CANDIDATES["title"])
         content = _find_text(u, _CANDIDATES["content"])
-        # 항(項)이 하위 요소로 오는 경우 본문에 합침
-        sub_texts = [t.text.strip() for t in u.iter() if t.text and t.text.strip()
-                     and t.tag not in sum(_CANDIDATES.values(), [])]
-        body = content or " ".join(sub_texts)
+        # 긴 조문(제17조 청약철회 등)은 조문내용에 헤더("제17조(청약철회등)")만 오고
+        # 실제 본문은 항·호·목 하위요소에 온다. 헤더만 쓰면 핵심 조문이 빈 껍데기가 되므로
+        # 항·호·목 본문을 문서 순서대로 헤더에 합친다(없으면 조문내용이 곧 전문).
+        sub_texts = [t.text.strip() for t in u.iter()
+                     if t.tag in _CANDIDATES["subcontent"] and t.text and t.text.strip()]
+        body = " ".join([content, *sub_texts]).strip() if sub_texts else content
         if not (no and body):
             continue
         article = no if no.startswith("제") else f"제{no}조"
