@@ -141,5 +141,7 @@ tests/test_contracts.py
 - ❌ 옛 LangGraph API 추측 → ✅ 불확실하면 질문
 - ❌ 법령 API를 기본 UA·단발 호출 → ✅ User-Agent + 재시도 (gov API가 기본 파이썬 UA 거부·간헐 연결 리셋)
 - ❌ 조문 청킹 시 가지번호(제43조의2)·전문(장 제목) 무시 → ✅ 가지번호 반영·전문 제외 (안 그러면 중복 id로 chromadb 적재 실패)
+- ❌ 청킹 시 조문내용(헤더)만 본문으로 → ✅ 항·호·목 하위요소 본문도 합치기 (긴 조문은 조문내용에 "제17조(청약철회등)" 헤더만 와 본문이 빈 껍데기 됨)
+- ❌ Chroma 컬렉션 기본 거리(L2)로 생성 → ✅ `hnsw:space=cosine` (문장 임베딩은 코사인; L2는 비정규화 벡터에서 score=1-dist가 음수 쓰레기값)
 - ❌ (Windows) 스크립트 콘솔 인코딩 방치 → ✅ `PYTHONUTF8=1` (cp949에서 ✓ 등 출력 시 크래시)
 - ❌ os.getenv 쓰면서 .env 로드 안 함 → ✅ 진입점(config.py)에서 load_dotenv 1회
