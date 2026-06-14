@@ -1,0 +1,2 @@
+{"date": "2026-06-15", "domain": "labor", "retrieval": {"n": 20, "k": 3, "hit_at_k": 0.4, "mrr": 0.258}, "cost": {"calls": 0, "input_tokens": 0, "output_tokens": 0, "total_cost_usd": 0, "by_task": {}}, "grounding": {"n": 20, "grounding_rate": 1.0, "avg_citations": 3.0}}
+{"date": "2026-06-15", "domain": "labor", "retrieval": {"n": 20, "k": 3, "hit_at_k": 0.4, "mrr": 0.258}, "cost": {"calls": 0, "input_tokens": 0, "output_tokens": 0, "total_cost_usd": 0, "by_task": {}}, "grounding": {"n": 20, "grounding_rate": 1.0, "avg_citations": 3.0}}
