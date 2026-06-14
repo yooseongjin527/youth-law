@@ -86,7 +86,7 @@ git switch -c feat/consumer-answer      # 예시 (자기 분야로)
 
 - **커밋**: `<type>(<scope>): 한글 제목` 예) `feat(consumer): 청약철회 답변 생성`
 - **푸시/PR 기준**:
-  - 변경 **5개 미만 + 공용파일 아님** → `main` 직접 push OK (단 **push 전 `pytest` 통과** 필수)
+  - 변경 **5개 미만 + 공용파일 아님** → `dev` 직접 push OK (단 **push 전 `pytest` 통과** 필수)
   - **5개 이상 또는 공용파일**(state/graph/rag/contacts/drafter/supervisor/planner/llm/cost/pipeline) → 기능 브랜치 + PR
   - 공용 파일은 개수 무관 **항상 PR + 전원 승인**
 

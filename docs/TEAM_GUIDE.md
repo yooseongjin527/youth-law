@@ -30,7 +30,7 @@
    - 국가법령정보센터(open.law.go.kr → OPEN API 신청: **법령 목록 + 본문**) — 수동 승인 1~2일
    - 한 명 키(OC) 받아 팀 공유 → `.env` (이미 .gitignore에 포함)
 3. **레포 셋업**
-   - 이 골격 업로드 + Squash merge 설정. 브랜치/직접-push 규칙은 CLAUDE.md '브랜치 전략' 따름 (소규모 5개 미만·비공용은 직접 push 허용, 그 외·공용은 PR)
+   - 이 골격 업로드 + Squash merge 설정. 브랜치/직접-push 규칙은 CLAUDE.md '브랜치 전략' 따름 (소규모 5개 미만·비공용은 dev 직접 push 허용, 그 외·공용은 PR)
    - pre-commit(ruff) 설정, GitHub Actions CI 활성화 (.github/workflows/ci.yml 동봉됨)
 4. **전원 로컬 검증** — 4명 각자 클론 후:
    ```bash
@@ -75,7 +75,7 @@
 **공용 파일 작업은 여기서 선언** — "오늘 rag.py 제가 잡습니다" (동시 수정 충돌 방지)
 
 ### PR 규칙
-먼저 **PR이 필요한지부터** (CLAUDE.md '브랜치 전략'): 5개 미만·비공용 변경은 `main` 직접 push 허용(push 전 로컬 `pytest` 통과), 그 외/공용은 PR. PR일 때 승인 규칙:
+먼저 **PR이 필요한지부터** (CLAUDE.md '브랜치 전략'): 5개 미만·비공용 변경은 `dev` 직접 push 허용(push 전 로컬 `pytest` 통과), 그 외/공용은 PR. PR일 때 승인 규칙:
 
 | 대상 | 승인 | 비고 |
 |---|---|---|
