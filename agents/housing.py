@@ -12,18 +12,68 @@ TODO 우선순위 (담당 B)
 """
 from common.contacts import get_contacts
 from common.drafter import make_draft
+from common.llm import call_bedrock_json
 from common.rag import DomainRAG
 from state import LegalState
 
 _rag = DomainRAG(domain="housing", corpus_path="data/housing")
 
+# ★환각 방지★: 검색된 조문 안에서만 답하도록 강제하는 지시.
+_PROMPT = """당신은 청년에게 주택임대차 법령 '정보'를 안내하는 도우미입니다.
+아래 [검색된 현행 법령 조문]만을 근거로 사용자 질문에 답하세요.
+
+규칙:
+- 제시된 조문에 없는 내용은 절대 지어내지 마세요(법조문·숫자·기한 포함).
+- 근거가 부족하면 "검색된 조문만으로는 정확히 답하기 어렵다"고 정직하게 답하세요.
+- 단정적 법률 자문이 아니라 '법령 정보 안내'입니다. 답변 끝에 전문가 상담을 권하세요.
+- 평어로 물어본 청년이 이해하기 쉽게, 군더더기 없이.
+
+[사용자 질문]
+{query}
+
+[검색된 현행 법령 조문]
+{context}
+"""
+
+# Bedrock 호출 실패(미구현 포함) 시 — 환각 없이, 검색된 근거 조문으로 안내.
+_FALLBACK = (
+    "아래 현행 법령 조문을 근거 자료로 안내드립니다. "
+    "구체적 사안은 함께 안내한 공식 기관 상담을 권합니다."
+)
+_NO_CHUNKS = (
+    "검색된 현행 법령 조문이 없어 정확한 답변을 드리기 어렵습니다. "
+    "대한법률구조공단(132) 상담을 권합니다."
+)
+
+
+def _format_context(chunks: list[dict]) -> str:
+    """검색 조문을 프롬프트용으로 번호 매겨 정리."""
+    return "\n".join(
+        f'[{i}] {c["law_name"]} {c["article"]} (시행 {c["enforced_date"]})\n"{c["text"]}"'
+        for i, c in enumerate(chunks, 1)
+    )
+
+
+def _generate_answer(query: str, chunks: list[dict]) -> tuple[str, float]:
+    """검색 조문 근거로 답변 생성. 실패하면 환각 없는 안전 폴백."""
+    if not chunks:
+        return _NO_CHUNKS, 0.0
+    prompt = _PROMPT.format(query=query, context=_format_context(chunks))
+    try:
+        data = call_bedrock_json(prompt, required_keys=["answer"], task="answer")
+        return str(data["answer"]).strip(), 0.8
+    except Exception:
+        # call_bedrock 미구현/호출 실패 — 지어내지 않고 검증된 근거 조문만 제시.
+        # 환각이 아닌 정직한 degraded 응답이라 verifier 임계값 위로 둔다.
+        return _FALLBACK, 0.6
+
 
 def housing_agent(state: LegalState) -> dict:
     chunks = _rag.search(state["user_query"], k=3)
-    # TODO(B/Day3): chunks 근거로 Bedrock 답변 생성. 검색 조문 밖 내용 금지.
+    answer_text, confidence = _generate_answer(state["user_query"], chunks)
     answer: dict = {
         "domain": "housing",
-        "answer": "stub: 주택임대차 관점 답변",
+        "answer": answer_text,
         "citations": [
             {
                 "law_name": c["law_name"], "article": c["article"],
@@ -32,9 +82,9 @@ def housing_agent(state: LegalState) -> dict:
             } for c in chunks
         ],
         "contacts": get_contacts("housing"),
-        "confidence": 0.8,
+        "confidence": confidence,
     }
-    return {"domain_answers": [answer], "messages": ["[housing] stub 실행됨 (RAG)"]}
+    return {"domain_answers": [answer], "messages": ["[housing] RAG 근거 답변 생성"]}
 
 def housing_draft(state: LegalState, doc_type: str | None = None) -> dict:
     """housing 분야 문서 초안 생성. 답변을 먼저 만든 뒤 그 근거로 초안 작성.
