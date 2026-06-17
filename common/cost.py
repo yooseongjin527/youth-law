@@ -14,6 +14,10 @@ TODO 우선순위
 """
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()  # .env 로드 — MODEL_TIERS가 임포트 순서와 무관하게 실제 모델 ID를 읽도록
+
 # 작업별 모델 티어 — 비싼 모델을 모든 곳에 쓰지 않는다
 MODEL_TIERS = {
     "classify": os.getenv("BEDROCK_MODEL_SMALL", "anthropic.claude-haiku(예시)"),
