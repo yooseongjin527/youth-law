@@ -13,3 +13,5 @@ httpx
 # --- EC2/로컬 실검색용 (CI에선 불필요 — rag.py가 stub 폴백) ---
 # chromadb
 # sentence-transformers
+# rank-bm25       # 하이브리드 검색(BM25+임베딩)용
+# kiwipiepy       # 한국어 형태소 분석 (BM25 토크나이징)
