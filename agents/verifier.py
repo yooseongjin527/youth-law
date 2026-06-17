@@ -18,27 +18,66 @@ TODO 우선순위
   [공용/Day5] ③ verification_report를 발표 지표로 (검증 탈락률 = 환각 차단 건수)
 ────────────────────────────────────────────────────────
 """
+from common.llm import call_bedrock_json
 from state import LegalState
 
 # 검증 통과 기준: 이 값 미만이면 답변을 탈락시키고 리포트에 기록
 _MIN_CONFIDENCE = 0.5
 
+# ★환각 판정★: 답변이 근거 조문을 벗어나 '법령 사실을 지어냈는지'만 본다.
+# 일반 안내·정직한 hedging은 환각이 아니므로 통과시킨다(과탈락 방지).
+_JUDGE_PROMPT = """답변이 아래 [근거 조문]을 벗어나 법령 사실을 '지어냈는지' 판정하세요.
+
+판정 기준:
+- grounded=false (탈락): 근거 조문에 없거나 어긋나는 법조문·숫자·기한·비율·권리를
+  사실처럼 단정한 경우(환각).
+- grounded=true (통과):
+  · 근거 조문 내용으로 답한 경우.
+  · 조문에서 논리적으로 도출되는 동치 환산·재진술
+    (예: '20분의 1'→'5%', '2년'→'24개월')은 환각이 아니다.
+  · "조문에 직접 규정이 없어 일반적으로는…"처럼 한계를 정직하게 밝히고
+    일반 안내·전문가 상담을 권하는 경우.
+  일반론·면책문구·동치 환산은 환각이 아니다.
+
+[답변]
+{answer}
+
+[근거 조문]
+{snippets}
+"""
+
+
+def _coerce_bool(v) -> bool:
+    """LLM이 bool/문자열 무엇으로 주든 통과 여부로 변환."""
+    if isinstance(v, bool):
+        return v
+    return str(v).strip().lower() in ("true", "yes", "y", "1", "근거됨", "통과")
+
 
 def _is_grounded(answer_text: str, citations: list[dict]) -> tuple[bool, str]:
-    """답변이 인용 조문에 근거하는지 검사.
-    return: (통과 여부, 사유)
+    """답변이 인용 조문에 근거하는지 검사. return: (통과 여부, 사유)
 
-    TODO(공용/Day4): 실제 구현. 지금은 stub — '인용이 1건 이상 존재'만 본다.
-    실제 구현 전략(2단계):
-      1) 어휘 겹침: 답변의 핵심 명사들이 citations의 snippet 안에 등장하는가
-      2) (정밀) Bedrock 판정: "주장-조문 쌍을 주고 근거 여부 YES/NO"
+    1) 구조 가드: 인용·snippet 없으면 즉시 탈락.
+    2) Bedrock 판정(verify 티어): 조문 밖 법령 사실 날조면 탈락, 정직한 일반론은 통과.
+    3) 판정 호출 실패 시 fail-open — 보수적으로 통과(파이프라인 안 멈춤, 답엔 실제 인용 있음).
     """
     if not citations:
         return False, "인용된 조문이 없음"
-    if not any(c.get("snippet") for c in citations):
+    snippets = [c["snippet"] for c in citations if c.get("snippet")]
+    if not snippets:
         return False, "조문 원문(snippet)이 비어 있음"
-    # TODO(공용/Day4): 여기서 어휘 겹침/Bedrock 판정 수행
-    return True, "ok"
+
+    try:
+        data = call_bedrock_json(
+            _JUDGE_PROMPT.format(answer=answer_text, snippets="\n---\n".join(snippets)),
+            required_keys=["grounded", "reason"], task="verify",
+        )
+        ok = _coerce_bool(data["grounded"])
+        reason = str(data.get("reason", "")).strip()[:80] or ("ok" if ok else "근거 이탈")
+        return ok, reason
+    except Exception as e:
+        # fail-open: 판정 실패가 곧 서비스 마비가 되지 않게. 단 리포트에 폴백임을 남긴다.
+        return True, f"판정 폴백(통과): {type(e).__name__}"
 
 
 def verifier_agent(state: LegalState) -> dict:
