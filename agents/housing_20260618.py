@@ -12,7 +12,7 @@
     요구한다. 베이스 흐름(plain)에서는 그 지시가 답변 텍스트에 섞일 수 있으니,
     가지치기를 유지할지(원본 사용) / 단순화할지(이 뼈대 사용)는 담당자가 결정.
 """
-from common._mk_20260618_base_agent import run_domain_agent
+from common.base_agent_mk_20260618_ import run_domain_agent
 from common.drafter import make_draft
 from common.rag import DomainRAG
 from state import LegalState

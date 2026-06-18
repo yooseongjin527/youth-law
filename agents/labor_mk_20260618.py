@@ -9,7 +9,7 @@
   - 프롬프트 플레이스홀더 {question} → {query} (베이스 계약에 맞춤)
   - try 없이 노출돼 크래시하던 Bedrock 호출 → 베이스가 폴백 처리
 """
-from common._mk_20260618_base_agent import run_domain_agent
+from common.base_agent_mk_20260618_ import run_domain_agent
 from common.drafter import make_draft
 from common.rag import DomainRAG
 from state import LegalState

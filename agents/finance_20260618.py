@@ -14,7 +14,7 @@
   - 아래 _PROMPT_TEMPLATE은 원본 _ANSWER_PROMPT를 '그대로' 옮긴 것이라 여전히 JSON
     (answer/confidence) 출력을 요구한다. 쿼리확장·추출폴백 유지 여부는 담당자가 결정.
 """
-from common._mk_20260618_base_agent import run_domain_agent
+from common.base_agent_mk_20260618_ import run_domain_agent
 from common.drafter import make_draft
 from common.rag import DomainRAG
 from state import LegalState
