@@ -56,6 +56,8 @@ a { color: var(--brand-d); }
   color: #fff; border-radius: 10px; font-size: 19px; box-shadow: var(--sh-sm);
 }
 .brand-mark.sm { width: 30px; height: 30px; font-size: 15px; border-radius: 8px; }
+.brand-mark svg { width: 22px; height: 22px; }
+.brand-mark.sm svg { width: 17px; height: 17px; }
 .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
 .brand-text strong { color: var(--ink); font-size: 15px; font-weight: 700; }
 .brand-text em { color: var(--muted); font-size: 11px; font-style: normal; letter-spacing: .04em; }
@@ -98,7 +100,8 @@ main { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 24px; flex: 1 
   color: var(--navy-600); background: #eef3fe; border: 1px solid #dce7fc;
   padding: 6px 13px; border-radius: var(--r-pill); margin-bottom: 22px;
 }
-.hero-title { font-size: 44px; font-weight: 800; line-height: 1.18; margin: 0 0 18px; }
+.hero-title { font-size: 48px; font-weight: 800; line-height: 1.2; margin: 0 0 18px; letter-spacing: -0.025em; }
+.hero-title .accent { color: var(--navy-600); }
 .hero-title .grad {
   background: linear-gradient(120deg, var(--brand) 10%, var(--navy-700) 90%);
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
@@ -260,6 +263,17 @@ main { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 24px; flex: 1 
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* 로딩 3단계 스텝퍼 */
+.stepper { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.step-item { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--muted); transition: color .2s ease; }
+.step-item.done { color: var(--ok); }
+.step-item.active { color: var(--brand-d); font-weight: 600; }
+.step-ic { display: grid; place-items: center; width: 18px; height: 18px; flex-shrink: 0; }
+.step-ic svg { width: 15px; height: 15px; }
+.step-dot { width: 9px; height: 9px; border-radius: 50%; border: 2px solid #cbd5e1; }
+.step-sep { flex: 0 0 16px; height: 1px; background: var(--line); }
+[data-theme="dark"] .step-dot { border-color: #3a4a63; }
+
 #tags { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 24px 4px 6px; }
 .tags-label { color: var(--muted); font-size: 13px; margin-right: 2px; }
 .tag {
@@ -331,15 +345,27 @@ main { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 24px; flex: 1 
   padding: 12px 14px; margin-bottom: 8px;
 }
 .cite summary {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  display: flex; align-items: flex-start; gap: 12px;
   cursor: pointer; list-style: none; font-size: 14.5px; color: var(--ink);
 }
 .cite summary::-webkit-details-marker { display: none; }
 .cite summary::after {
-  content: "+"; color: var(--muted); font-size: 18px; font-weight: 400; margin-left: auto;
+  content: "+"; color: var(--muted); font-size: 18px; font-weight: 400;
+  align-self: center; flex-shrink: 0;
 }
 .cite[open] summary::after { content: "−"; }
-.cite .date { color: var(--ok); font-size: 12px; font-weight: 600; background: #ecfdf3; padding: 2px 8px; border-radius: 6px; }
+/* 에디토리얼 조문 헤더: §마크 + 조문/법령명 */
+.cite-head { display: flex; align-items: flex-start; gap: 11px; flex: 1; min-width: 0; }
+.cite-mark { font-size: 21px; font-weight: 800; line-height: 1.05; color: var(--navy-600); flex-shrink: 0; }
+.cite-meta { display: flex; flex-direction: column; min-width: 0; }
+.cite-article { font-size: 14.5px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+.cite-law { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+[data-theme="dark"] .cite-mark { color: #9cc0ff; }
+.cite .date {
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; flex-shrink: 0;
+  color: var(--ok); font-size: 12px; font-weight: 600; background: #ecfdf3; padding: 3px 9px; border-radius: 6px;
+}
+.cite .date svg { width: 12px; height: 12px; }
 .cite .snippet {
   font-size: 14px; color: #475569; line-height: 1.7; margin: 12px 0 10px;
   padding-left: 13px; border-left: 3px solid #cbd5e1;
@@ -363,14 +389,55 @@ main { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 24px; flex: 1 
   display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0;
   background: var(--navy-600); color: #fff; border-radius: 8px; font-size: 14px;
 }
+.contact-ic svg { width: 16px; height: 16px; }
 .contact .phone { color: var(--brand-d); font-weight: 700; }
 .contact .note { color: var(--muted); font-size: 13px; }
 
-.draft-out {
-  background: #0e1726; color: #e2e8f0; border-radius: var(--r);
-  padding: 16px; white-space: pre-wrap; font-size: 13px; line-height: 1.7; margin-top: 14px;
-  font-family: "Pretendard", monospace;
+/* 문서 초안 — 카드와 어울리는 문서 시트 형태 */
+.draft-doc {
+  margin-top: 16px; border: 1px solid var(--line); border-radius: var(--r);
+  background: #fbfcfe; overflow: hidden; animation: rise .28s ease both;
 }
+.draft-doc-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid var(--line-2);
+}
+.draft-doc-title { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: var(--ink); }
+.draft-doc-title svg { width: 15px; height: 15px; color: var(--navy-600); }
+.draft-doc-head .copy-btn { margin-left: auto; }
+.draft-doc-body {
+  margin: 0; padding: 16px 18px; white-space: pre-wrap; word-break: break-word;
+  font-family: inherit; font-size: 13.5px; line-height: 1.8; color: var(--text);
+}
+[data-theme="dark"] .draft-doc { background: #10192b; }
+[data-theme="dark"] .draft-doc-head { background: #16223a; border-color: var(--line-2); }
+[data-theme="dark"] .draft-doc-title svg { color: #9cc0ff; }
+
+/* ── 답변 단어 단위 reveal (타이핑 느낌) ─────────────────── */
+.answer .w { opacity: 0; }
+.answer .w.on { opacity: 1; transition: opacity .18s ease; }
+@media (prefers-reduced-motion: reduce) { .answer .w { opacity: 1; } }
+
+/* ── 복사 버튼 ────────────────────────────────────────── */
+.copy-btn {
+  display: inline-flex; align-items: center; gap: 5px; margin-left: auto;
+  background: none; border: 0; font-family: inherit; font-size: 12.5px; font-weight: 600;
+  color: var(--muted); cursor: pointer; padding: 4px 9px; border-radius: 8px; transition: all .15s ease;
+}
+.copy-btn:hover { color: var(--brand-d); background: #f1f5f9; }
+[data-theme="dark"] .copy-btn:hover { background: #1b2840; }
+.copy-btn svg { width: 14px; height: 14px; }
+
+/* ── 토스트 ───────────────────────────────────────────── */
+.toast {
+  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(12px);
+  display: inline-flex; align-items: center; gap: 8px; z-index: 100;
+  background: #0f172a; color: #fff; padding: 11px 18px; border-radius: var(--r-pill);
+  font-size: 14px; font-weight: 600; box-shadow: var(--sh-lg);
+  opacity: 0; pointer-events: none; transition: opacity .25s ease, transform .25s ease;
+}
+.toast svg { width: 16px; height: 16px; color: #4ade80; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* ── Footer ───────────────────────────────────────────── */
 footer { border-top: 1px solid var(--line); background: #fff; margin-top: 40px; }
@@ -415,10 +482,33 @@ footer { border-top: 1px solid var(--line); background: #fff; margin-top: 40px; 
   .hero-sub br { display: none; }
   .nav-domains { display: none; }
   main { padding: 0 16px; }
+
+  /* 상담·결과 화면 */
+  #consult { padding: 24px 0 48px; }
+  .ask-title { font-size: 21px; }
+  .ask-help { font-size: 14px; }
+  .ask { padding: 7px 7px 7px 14px; }
+  .ask input { font-size: 15px; }
+  .ask #go { padding: 11px 16px; }
+  .card { padding: 20px 18px; }
+  .card-head { flex-wrap: wrap; gap: 8px; }
+  .cite summary { flex-wrap: wrap; }
+  .answer { font-size: 15px; }
+  .answer .ans-list li { padding-left: 34px; }
+  .draft-doc-body { font-size: 12.5px; padding: 14px 15px; }
 }
 
 @media (max-width: 440px) {
   .domains { grid-template-columns: 1fr; }
+
+  /* 상담·결과 — 초협소 화면 */
+  .navbar-inner { padding: 11px 16px; }
+  .brand-text em { display: none; }
+  .ask { flex-wrap: wrap; gap: 8px; }
+  .ask #go { flex: 1 0 100%; }   /* 아이콘+입력칸은 한 줄, 버튼만 아래 전체폭 */
+  .card { padding: 18px 15px; }
+  .answer .ans-list li { padding-left: 30px; }
+  .contact { flex-wrap: wrap; }
 }
 
 /* ============================================================
@@ -439,6 +529,7 @@ footer { border-top: 1px solid var(--line); background: #fff; margin-top: 40px; 
     radial-gradient(1100px 460px at 50% -12%, #17274a 0%, rgba(23,39,74,0) 62%),
     linear-gradient(180deg, #131e33 0%, var(--card) 100%);
 }
+[data-theme="dark"] .hero-title .accent { color: #9cc0ff; }
 [data-theme="dark"] .hero-title .grad, [data-theme="dark"] .grad {
   background: linear-gradient(120deg, #79a8ff 10%, #bcd3ff 90%);
   -webkit-background-clip: text; background-clip: text;
