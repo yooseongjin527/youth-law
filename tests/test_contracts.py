@@ -88,20 +88,53 @@ def test_document_draft():
     assert "검토" in draft["guide"]
 
 
-def test_verifier_passes_grounded():
-    """검증: 인용 있는 정상 답변은 통과."""
-    from agents.verifier import verifier_agent
-    state = _state()
-    state["domain_answers"] = [{
-        "domain": "labor", "answer": "테스트 답변",
-        "citations": [{"law_name": "근로기준법", "article": "제36조",
-                       "enforced_date": "2021-11-19", "snippet": "조문 원문",
+def _answer(text, conf=0.8):
+    return {
+        "domain": "labor", "answer": text,
+        "citations": [{"law_name": "근로기준법", "article": "제43조",
+                       "enforced_date": "2021-11-19",
+                       "snippet": "임금은 매월 1회 이상 일정한 날짜를 정하여 지급하여야 한다.",
                        "source_url": "https://law.go.kr"}],
-        "contacts": [], "confidence": 0.8,
-    }]
-    r = verifier_agent(state)
+        "contacts": [], "confidence": conf,
+    }
+
+
+def test_verifier_passes_grounded(monkeypatch):
+    """검증: 근거된 답변은 그대로 통과 (판정기 mock으로 결정적 테스트)."""
+    import agents.verifier as v
+    monkeypatch.setattr(v, "call_bedrock_json", lambda *a, **k: {"ungrounded": []})
+    state = _state()
+    state["domain_answers"] = [_answer("임금은 매월 1회 이상 지급해야 합니다.")]
+    r = v.verifier_agent(state)
     assert len(r["verified_answers"]) == 1
     assert r["verification_report"][0]["dropped"] is False
+    assert r["verified_answers"][0]["answer"] == "임금은 매월 1회 이상 지급해야 합니다."  # 변형 없음
+
+
+def test_verifier_removes_hallucinated_sentence(monkeypatch):
+    """검증(B): 환각 문장만 제거하고 나머지는 정제본으로 통과."""
+    import agents.verifier as v
+    monkeypatch.setattr(v, "call_bedrock_json", lambda *a, **k: {"ungrounded": [2]})
+    state = _state()
+    state["domain_answers"] = [
+        _answer("임금은 매월 지급해야 합니다.\n사용자는 제999조로 즉시 해고할 수 있습니다.")
+    ]
+    r = v.verifier_agent(state)
+    assert len(r["verified_answers"]) == 1
+    ans = r["verified_answers"][0]["answer"]
+    assert "제999조" not in ans      # 환각 문장 제거됨
+    assert "임금은 매월" in ans        # 근거 문장 보존
+
+
+def test_verifier_drops_all_hallucinated(monkeypatch):
+    """검증(B): 모든 문장이 환각이면 통째 탈락 (정직 거절 경로)."""
+    import agents.verifier as v
+    monkeypatch.setattr(v, "call_bedrock_json", lambda *a, **k: {"ungrounded": [1, 2]})
+    state = _state()
+    state["domain_answers"] = [_answer("지어낸 주장 하나. 지어낸 주장 둘.")]
+    r = v.verifier_agent(state)
+    assert len(r["verified_answers"]) == 0
+    assert r["verification_report"][0]["dropped"] is True
 
 
 def test_verifier_drops_uncited():
