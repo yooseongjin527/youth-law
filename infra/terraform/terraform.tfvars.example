@@ -1,0 +1,12 @@
+# 복사해서 사용: cp terraform.tfvars.example terraform.tfvars
+# terraform.tfvars 는 비밀값을 담으므로 절대 커밋하지 않는다(.gitignore 처리됨).
+
+aws_region       = "us-west-2"
+project_name     = "youth-law"
+instance_type    = "t3.large"          # 비용 절감 시 "t3.medium"
+allowed_ip_cidr  = "YOUR_PUBLIC_IP/32" # 예: 1.2.3.4/32
+ec2_key_name     = "YOUR_KEYPAIR_NAME"
+db_username      = "youthlaw"
+db_password      = "CHANGE_ME_STRONG_PASSWORD"
+budget_limit_usd = "50"
+budget_email     = "you@example.com"
