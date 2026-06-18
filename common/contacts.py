@@ -20,8 +20,38 @@ _CONTACTS: dict[str, list[dict]] = {
         {
             "org": "고용노동부 고객상담센터",
             "phone": "1350",
-            "url": "https://labor.moel.go.kr/",
-            "note": "임금체불·부당해고 진정 상담",
+            "url": "https://1350.moel.go.kr/home/",
+            "note": "임금체불·부당해고·출산휴가 등 노동관계 민원 상담",
+        },
+        {
+            "org": "노동위원회",
+            "phone": "044-202-8226",
+            "url": "https://nlrc.go.kr/nlrc/main/main.do",
+            "note": "부당해고·부당노동행위 구제, 노동쟁의 조정, 차별시정 신청",
+        },
+        {
+            "org": "근로복지공단",
+            "phone": "1588-0075",
+            "url": "https://www.comwel.or.kr/comwel/help/index.jsp",
+            "note": "산재보상·요양·재활, 고용·산재보험 가입·납부, 근로복지서비스 상담",
+        },
+        {
+            "org": "청소년·청년근로권익센터",
+            "phone": "1644-3119",
+            "url": "https://www.youthlabor.co.kr/customer/info",
+            "note": "청소년·청년 노동상담, 부당대우 상담, 진정사건 대리 등 무료 권리구제 지원",
+        },
+        {
+            "org": "국가인권위원회",
+            "phone": "1331",
+            "url": "https://case.humanrights.go.kr/cnslt/guide.do",
+            "note": "직장 내 차별·성희롱·인권침해 상담 및 진정 안내",
+        },
+        {
+            "org": "대한법률구조공단",
+            "phone": "132",
+            "url": "https://www.klac.or.kr/",
+            "note": "임금체불·해고 등 노동분쟁 관련 무료 법률상담, 소송구조·소송서류 작성 지원",
         },
     ],
     "housing": [
