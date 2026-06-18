@@ -2,17 +2,32 @@
 {% block content %}
 <section id="landing">
   <div class="hero">
-    <span class="eyebrow">청년 맞춤 생활법률 AI</span>
+    <svg class="hero-illust" viewBox="0 0 172 112" fill="none" aria-hidden="true">
+      <rect x="12" y="12" width="92" height="54" rx="16" fill="var(--card)" stroke="var(--brand)" stroke-width="2.6"/>
+      <path d="M30 62 L30 80 L48 64 Z" fill="var(--card)" stroke="var(--brand)" stroke-width="2.6" stroke-linejoin="round"/>
+      <text x="58" y="49" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="30" font-weight="800" fill="var(--brand)">?</text>
+      <rect x="86" y="42" width="74" height="50" rx="15" fill="var(--accent)"/>
+      <path d="M128 88 L128 104 L112 86 Z" fill="var(--accent)" stroke-linejoin="round"/>
+      <text x="123" y="75" text-anchor="middle" font-family="Georgia, serif" font-size="29" font-weight="700" fill="#ffffff">§</text>
+      <path d="M156 16 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 z" fill="var(--accent)" opacity="0.55"/>
+    </svg>
     <h1 class="hero-title">법을 몰라 막막했던 순간,<br><span class="accent">청년 생활법률 상담 AI가 풀어드릴게요</span></h1>
     <p class="hero-sub">
-      평소 쓰는 말로 편하게 물어보면 돼요.<br>
-      맞는 법 조문을 찾아, 어디에 연락할지까지 쉽게 알려드릴게요.
+      평소 쓰는 말로 편하게 적어보세요.<br>
+      맞는 법 조문과 연락처, 문서 초안까지 한 번에 알려드릴게요.
     </p>
-    <div class="hero-cta">
-      <button class="btn btn-primary" onclick="startConsult()">상담 시작하기
-        <svg viewBox="0 0 24 24" class="ic-sm"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="hero-search">
+      <svg viewBox="0 0 24 24" class="ask-ic"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="hq" type="text" maxlength="500" placeholder="어떤 상황인지 편하게 적어주세요">
+      <button class="hero-go" onclick="askFromHero()">물어보기
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <a class="btn btn-ghost" href="#domains">어떤 분야를 다루나요?</a>
+    </div>
+    <div class="hero-chips">
+      <button class="chip" onclick="askWith('알바비를 못 받았어요')">알바비를 못 받았어요</button>
+      <button class="chip" onclick="askWith('전세 보증금을 안 돌려줘요')">전세 보증금을 안 돌려줘요</button>
+      <button class="chip" onclick="askWith('인터넷으로 산 옷을 환불하고 싶어요')">인터넷으로 산 옷을 환불하고 싶어요</button>
+      <button class="chip" onclick="askWith('대출 독촉 전화가 와요')">대출 독촉 전화가 와요</button>
     </div>
     <div class="trust-row">
       <span class="trust-item"><span class="dot"></span>국가법령정보센터 현행 법령</span>
@@ -114,20 +129,10 @@
     </div>
   </div>
 
-  <div class="examples reveal">
-    <span class="ex-label">이런 고민을 물어보세요</span>
-    <div class="ex-chips">
-      <button class="chip" onclick="startWith('알바비를 못 받았어요')">알바비를 못 받았어요</button>
-      <button class="chip" onclick="startWith('전세 보증금을 안 돌려줘요')">전세 보증금을 안 돌려줘요</button>
-      <button class="chip" onclick="startWith('인터넷으로 산 옷을 환불하고 싶어요')">인터넷으로 산 옷을 환불하고 싶어요</button>
-      <button class="chip" onclick="startWith('대출 연체로 독촉 전화가 와요')">대출 연체로 독촉 전화가 와요</button>
-    </div>
-  </div>
-
   <div class="cta-band reveal">
     <h2>지금, 막막한 고민을 물어보세요</h2>
     <p>몇 초면 충분해요. 회원가입도, 비용도 없어요.</p>
-    <button class="btn btn-cta" onclick="startConsult()">상담 시작하기
+    <button class="btn btn-cta" onclick="focusHero()">상담 시작하기
       <svg viewBox="0 0 24 24" class="ic-sm"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   </div>
@@ -165,6 +170,27 @@ function startConsult() {
 function startWith(text) {
   startConsult();
   document.getElementById("q").value = text;
+}
+
+// 히어로 입력창에서 바로 제출 → 결과(상담) 화면으로 직행
+function askFromHero() {
+  const hq = document.getElementById("hq");
+  const q = hq.value.trim();
+  if (q.length < 2) { hq.focus(); return; }
+  document.getElementById("q").value = q;
+  startConsult();
+  consult();
+}
+// 예시 칩 클릭 → 즉시 질문 실행
+function askWith(text) {
+  document.getElementById("q").value = text;
+  startConsult();
+  consult();
+}
+// CTA 밴드 → 히어로 입력창으로 데려가 포커스
+function focusHero() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  setTimeout(() => document.getElementById("hq").focus(), 320);
 }
 
 function backToLanding() {
@@ -467,7 +493,7 @@ const PH_EXAMPLES = [
   "계약서도 없이 일했는데 괜찮을까요?",
 ];
 function initPlaceholderTyper() {
-  const el = document.getElementById("q");
+  const el = document.getElementById("hq");
   if (!el) return;
   let idx = 0, ch = 0, deleting = false, paused = false;
   el.addEventListener("focus", () => { paused = true; el.placeholder = "어떤 상황인지 편하게 적어주세요"; });
@@ -490,6 +516,8 @@ initPlaceholderTyper();
 
 document.getElementById("q").addEventListener("keydown",
   e => { if (e.key === "Enter") consult(); });
+document.getElementById("hq").addEventListener("keydown",
+  e => { if (e.key === "Enter") askFromHero(); });
 
 // 스크롤 시 등장 애니메이션 (뷰포트 진입 시 .in 부여)
 (function initReveal() {
