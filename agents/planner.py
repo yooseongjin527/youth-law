@@ -25,6 +25,15 @@ _DISCLAIMER = (
 )
 
 
+_SNIPPET_MAX = 120  # 근거 조문 표시 길이 — 조문 전문 도배 방지(원문은 source_url로)
+
+
+def _truncate(text: str, n: int = _SNIPPET_MAX) -> str:
+    """근거 조문을 표시용으로 줄임. 공백·줄바꿈 정리 후 n자 초과면 … 붙임."""
+    text = " ".join(text.split())
+    return text if len(text) <= n else text[:n].rstrip() + "…"
+
+
 def _build_block(a: dict) -> dict:
     """한 분야 답을 화면 카드용 구조로 정리. citation에 조문 원문(snippet) 포함."""
     return {
@@ -36,7 +45,7 @@ def _build_block(a: dict) -> dict:
                 "law_name": c["law_name"],
                 "article": c["article"],
                 "enforced_date": c["enforced_date"],
-                "text": c["snippet"],          # ← 조문 원문 (화면 근거 박스에 표시)
+                "text": _truncate(c["snippet"]),   # ← 조문 원문 미리보기(절단). 전체는 source_url
                 "source_url": c["source_url"],
             }
             for c in a["citations"][:2]
