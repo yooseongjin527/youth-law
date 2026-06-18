@@ -138,6 +138,7 @@ if __name__ == "__main__":
     target = sys.argv[1] if len(sys.argv) > 1 else "all"
     domains = DOMAINS if target == "all" else [target]
     if any(d not in DOMAINS for d in domains):
-        print(f"분야는 {DOMAINS} 또는 all"); sys.exit(1)
+        print(f"분야는 {DOMAINS} 또는 all")
+        sys.exit(1)
     for d in domains:
         print_scorecard(run(d))

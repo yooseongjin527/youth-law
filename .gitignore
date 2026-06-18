@@ -8,3 +8,7 @@ venv/
 chroma_db/
 # 개인 계층 (CLAUDE.local.md.example 복사해서 사용)
 CLAUDE.local.md
+to-do summary.md
+complete_summary/
+completed to-do summary.md
+RAG_SETUP_GUIDE.md
