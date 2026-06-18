@@ -8,5 +8,9 @@ allowed_ip_cidr  = "YOUR_PUBLIC_IP/32" # 예: 1.2.3.4/32
 ec2_key_name     = "YOUR_KEYPAIR_NAME"
 db_username      = "youthlaw"
 db_password      = "CHANGE_ME_STRONG_PASSWORD"
-budget_limit_usd = "50"
-budget_email     = "you@example.com"
+
+# 비용 알림: DE-AI 프로젝트 계정은 budgets 권한이 없어 false 유지.
+# budgets 권한 있는 계정에서만 true로 켜고 아래 두 값을 채운다.
+enable_budgets   = false
+# budget_limit_usd = "50"
+# budget_email     = "you@example.com"

@@ -250,7 +250,10 @@ resource "aws_instance" "app" {
 }
 
 # ── 비용 가드레일: 월 예산 알림 (실제 80% / 예측 100%) ──────────────────────
+# 주의: DE-AI 프로젝트 계정의 격리 정책엔 budgets 권한이 없어 기본 비활성(enable_budgets=false).
+# budgets 권한이 있는 계정에서만 true로 켜고, 그 외엔 콘솔/관리자가 예산 알림을 설정한다.
 resource "aws_budgets_budget" "monthly" {
+  count        = var.enable_budgets ? 1 : 0
   name         = "${var.project_name}-monthly"
   budget_type  = "COST"
   limit_amount = var.budget_limit_usd

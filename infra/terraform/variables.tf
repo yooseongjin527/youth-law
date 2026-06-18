@@ -35,13 +35,20 @@ variable "db_password" {
   description = "RDS 마스터 비밀번호. terraform.tfvars에만 넣고 절대 커밋하지 않는다."
 }
 
+variable "enable_budgets" {
+  type        = bool
+  default     = false
+  description = "AWS Budgets 알림 생성 여부. DE-AI 프로젝트 계정은 budgets 권한이 없어 false 유지. budgets 권한 있는 계정에서만 true."
+}
+
 variable "budget_limit_usd" {
   type        = string
   default     = "50"
-  description = "월 예산 한도(USD). 이 금액의 80%(실제)·100%(예측)에서 이메일 알림."
+  description = "월 예산 한도(USD). enable_budgets=true일 때 80%(실제)·100%(예측)에서 이메일 알림."
 }
 
 variable "budget_email" {
   type        = string
-  description = "비용 알림을 받을 이메일 주소"
+  default     = ""
+  description = "비용 알림 수신 이메일. enable_budgets=true일 때만 필요."
 }
