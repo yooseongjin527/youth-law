@@ -21,6 +21,7 @@
 """
 import json
 import sys
+from collections import defaultdict
 from datetime import date
 from pathlib import Path
 
@@ -38,6 +39,18 @@ _AGENTS = {
     "labor": labor_agent, "housing": housing_agent,
     "consumer": consumer_agent, "finance": finance_agent,
 }
+_FINANCE_CATEGORY_BY_LAW = {
+    "전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법": "voice_phishing",
+    "채무자 회생 및 파산에 관한 법률": "debt_restructuring",
+    "채권의 공정한 추심에 관한 법률": "collection",
+    "대부업 등의 등록 및 금융이용자 보호에 관한 법률": "loan",
+}
+_FINANCE_CATEGORY_LABELS = {
+    "voice_phishing": "보이스피싱",
+    "debt_restructuring": "개인회생·파산",
+    "collection": "채권추심",
+    "loan": "대부업",
+}
 _EVAL_DIR = Path(__file__).resolve().parent.parent / "evals"
 
 
@@ -54,25 +67,59 @@ def _matches(expected: str, chunk: dict) -> bool:
     return expected.replace(" ", "") in got.replace(" ", "")
 
 
+def _item_category(item: dict) -> str:
+    """평가 문항의 카테고리를 구한다. 없으면 expected_articles로 추론한다."""
+    category = item.get("category")
+    if category:
+        return category
+    laws = {
+        exp.rsplit(" 제", 1)[0]
+        for exp in item.get("expected_articles", [])
+    }
+    for law, inferred in _FINANCE_CATEGORY_BY_LAW.items():
+        if law in laws:
+            return inferred
+    return "uncategorized"
+
+
 def eval_retrieval(domain: str, k: int = 3) -> dict:
     """[축① 평가] hit@k + MRR."""
     items = load_eval_set(domain)
     if not items:
-        return {"n": 0, "hit_at_k": None, "mrr": None}
+        return {"n": 0, "hit_at_k": None, "mrr": None, "by_category": {}}
     rag = DomainRAG(domain=domain)
     hits, rr_sum = 0, 0.0
+    by_category = defaultdict(lambda: {"n": 0, "hits": 0, "rr_sum": 0.0})
     for item in items:
+        category = _item_category(item)
         chunks = rag.search(item["question"], k=k)
         rank = None
         for i, c in enumerate(chunks, start=1):
             if any(_matches(exp, c) for exp in item["expected_articles"]):
                 rank = i
                 break
+        bucket = by_category[category]
+        bucket["n"] += 1
         if rank:
             hits += 1
             rr_sum += 1.0 / rank
+            bucket["hits"] += 1
+            bucket["rr_sum"] += 1.0 / rank
     n = len(items)
-    return {"n": n, "k": k, "hit_at_k": round(hits / n, 3), "mrr": round(rr_sum / n, 3)}
+    return {
+        "n": n,
+        "k": k,
+        "hit_at_k": round(hits / n, 3),
+        "mrr": round(rr_sum / n, 3),
+        "by_category": {
+            cat: {
+                "n": bucket["n"],
+                "hit_at_k": round(bucket["hits"] / bucket["n"], 3),
+                "mrr": round(bucket["rr_sum"] / bucket["n"], 3),
+            }
+            for cat, bucket in by_category.items()
+        },
+    }
 
 
 def eval_grounding(domain: str) -> dict:
@@ -103,7 +150,8 @@ def run(domain: str) -> dict:
     tracker.reset()  # 이번 평가 실행의 비용만 측정
     retrieval = eval_retrieval(domain)          # 축① 평가
     grounding = eval_grounding(domain)          # 축③ 환각 (LLM 호출 발생)
-    cost = tracker.report()                     # 축② 비용 — grounding의 LLM 호출 누적분이라 그 뒤에 측정
+    cost = tracker.report()                     # 축② 비용 — grounding의 LLM
+                                               # 호출 누적분이라 그 뒤에 측정
 
     result = {                                  # 표시·저장은 축 번호순(①②③)
         "date": date.today().isoformat(),
@@ -126,9 +174,27 @@ def print_scorecard(r: dict):
     print(f"  [{r['domain']}] 3축 스코어카드  ({r['date']})")
     print(f"{'='*52}")
     ret, grd, cst = r["retrieval"], r["grounding"], r["cost"]
-    print(f"  축① 평가   hit@{ret.get('k','-')}: {ret['hit_at_k']}   MRR: {ret['mrr']}   (n={ret['n']})")
-    print(f"  축② 비용   호출 {cst['calls']}회  토큰 {cst['input_tokens']}+{cst['output_tokens']}  ${cst['total_cost_usd']}")
-    print(f"  축③ 환각   grounding rate: {grd['grounding_rate']}   평균 인용: {grd['avg_citations']}")
+    print(
+        f"  축① 평가   hit@{ret.get('k','-')}: {ret['hit_at_k']}   "
+        f"MRR: {ret['mrr']}   (n={ret['n']})"
+    )
+    if ret.get("by_category"):
+        print("  축① 분야별")
+        for cat in sorted(ret["by_category"]):
+            stat = ret["by_category"][cat]
+            label = _FINANCE_CATEGORY_LABELS.get(cat, cat)
+            print(
+                f"    - {label:<14} hit@{ret.get('k','-')}: {stat['hit_at_k']}   "
+                f"MRR: {stat['mrr']}   (n={stat['n']})"
+            )
+    print(
+        f"  축② 비용   호출 {cst['calls']}회  토큰 "
+        f"{cst['input_tokens']}+{cst['output_tokens']}  ${cst['total_cost_usd']}"
+    )
+    print(
+        f"  축③ 환각   grounding rate: {grd['grounding_rate']}   "
+        f"평균 인용: {grd['avg_citations']}"
+    )
     if cst["calls"] == 0:
         print("            (LLM 호출 0회 — Bedrock 연결 전 stub 상태)")
     print(f"  → 이력 저장: evals/results/{r['domain']}_history.jsonl")
