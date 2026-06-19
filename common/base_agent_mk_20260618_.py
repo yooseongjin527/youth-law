@@ -38,7 +38,15 @@ _NO_CHUNKS = (
 )
 
 
-def _to_citations(chunks: list[dict]) -> list[dict]:
+def safe_search(rag, query: str, k: int = 3) -> list[dict]:
+    """Run domain RAG without letting retrieval failures crash the graph."""
+    try:
+        return rag.search(query, k=k)
+    except Exception:
+        return []
+
+
+def chunks_to_citations(chunks: list[dict]) -> list[dict]:
     """RAG 청크(text) → LegalCitation(snippet) 형태로 변환. 키 매핑만 한다."""
     return [
         {
@@ -48,6 +56,47 @@ def _to_citations(chunks: list[dict]) -> list[dict]:
         }
         for c in chunks
     ]
+
+
+def build_domain_answer(
+    *,
+    domain: str,
+    answer: str,
+    chunks: list[dict],
+    confidence: float,
+    contacts: list[dict] | None = None,
+) -> dict:
+    """Assemble the shared DomainAnswer shape while preserving domain logic upstream."""
+    return {
+        "domain": domain,
+        "answer": answer,
+        "citations": chunks_to_citations(chunks),
+        "contacts": contacts if contacts is not None else get_contacts(domain),
+        "confidence": confidence,
+    }
+
+
+def domain_result(domain: str, answer: dict, message: str) -> dict:
+    """Return the shared LangGraph node update shape."""
+    return {
+        "domain_answers": [answer],
+        "messages": [f"[{domain}] {message}"],
+    }
+
+
+def extractive_answer(chunks: list[dict]) -> str:
+    """Build a safe fallback answer from retrieved law references only."""
+    refs: list[str] = []
+    for c in chunks:
+        ref = f"{c['law_name']} {c['article']}"
+        if ref not in refs:
+            refs.append(ref)
+    return (
+        "문의하신 내용과 관련된 현행 법령 조문을 찾았습니다: "
+        + ", ".join(refs)
+        + ". 아래 근거 조문 원문(시행일 포함)과 검증된 공식 연락처를 확인해 주세요. "
+        "구체적인 적용은 상황에 따라 다를 수 있어 전문가 상담을 권합니다."
+    )
 
 
 def _format_context(chunks: list[dict]) -> str:
@@ -77,15 +126,9 @@ def run_domain_agent(
     query = state["user_query"]
 
     # 1) RAG 검색 — 실패해도 그래프를 죽이지 않게 빈 리스트로 폴백.
-    try:
-        chunks = rag.search(query, k=search_k)
-    except Exception:
-        chunks = []
+    chunks = safe_search(rag, query, k=search_k)
 
-    # 2) 검색 청크 → citations 변환 (있는 만큼만, 환각 0).
-    citations = _to_citations(chunks)
-
-    # 3) 빈 검색결과 → 안전 응답 / 검색 충분 → Bedrock 답변(실패 시 검색 조문 안내).
+    # 2) 빈 검색결과 → 안전 응답 / 검색 충분 → Bedrock 답변(실패 시 검색 조문 안내).
     if not chunks:
         answer_text, confidence, note = _NO_CHUNKS, empty_confidence, "검색결과 없음"
     else:
@@ -97,16 +140,12 @@ def run_domain_agent(
             # 호출 실패/미구현 — 지어내지 않고 검색된 근거 조문만 제시(정직한 degraded).
             answer_text, confidence, note = _FALLBACK, degraded_confidence, "Bedrock 실패 폴백"
 
-    # 4) DomainAnswer 조립 + 검증 연락처 연결 + 반환 구조 통일.
-    answer: dict = {
-        "domain": domain,
-        "answer": answer_text,
-        "citations": citations,
-        "contacts": get_contacts(domain),
-        "confidence": confidence,
-    }
+    # 3) DomainAnswer 조립 + 검증 연락처 연결 + 반환 구조 통일.
+    answer = build_domain_answer(
+        domain=domain,
+        answer=answer_text,
+        chunks=chunks,
+        confidence=confidence,
+    )
     rag_mode = "실모드" if getattr(rag, "is_real", False) else "stub"
-    return {
-        "domain_answers": [answer],
-        "messages": [f"[{domain}] {note} (RAG={rag_mode})"],
-    }
+    return domain_result(domain, answer, f"{note} (RAG={rag_mode})")

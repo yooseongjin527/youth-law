@@ -18,7 +18,12 @@ TODO 우선순위 (담당 D)
   [D/Day4] ④ 초안: 채무조정(개인회생) 신청 안내 doc_type 추가
 ────────────────────────────────────────────────────────
 """
-from common.contacts import get_contacts
+from common.base_agent_mk_20260618_ import (
+    build_domain_answer,
+    domain_result,
+    extractive_answer,
+    safe_search,
+)
 from common.drafter import make_draft
 from common.rag import DomainRAG, RetrievedChunk
 from state import LegalState
@@ -38,9 +43,11 @@ _ANSWER_PROMPT = (
     "당신은 청년에게 금융·채무 관련 '현행 법령 정보'를 안내하는 도우미입니다.\n"
     "아래 [검색된 조문]에 있는 내용만 근거로 답하세요.\n"
     "- 첫 문장: 핵심 법적 결론을 조문의 정확한 용어(제도·권리·의무 명칭)를 그대로 써서 제시.\n"
-    "- 다음: 근거 조문의 요건·효과를 구체적으로 — 기한·대상·절차·금액이 조문에 있으면 그 표현/수치 그대로.\n"
+    "- 다음: 근거 조문의 요건·효과를 구체적으로 — 기한·대상·절차·금액이 "
+    "조문에 있으면 그 표현/수치 그대로.\n"
     "- 마지막: 청년이 이해할 쉬운 말로 한두 문장 풀이.\n"
-    "- 조문에 없는 내용·수치·기관명 지어내기 금지. 조문만으로 부족하면 그 사실을 밝히고 confidence를 0.5 미만으로.\n"
+    "- 조문에 없는 내용·수치·기관명 지어내기 금지. 조문만으로 부족하면 "
+    "그 사실을 밝히고 confidence를 0.5 미만으로.\n"
     "- 군더더기·일반론·과한 면책 문구는 빼고 핵심만 3~5문장. 투자 조언이 아니라 법령 안내이며,\n"
     "  단정적 자문 표현은 피하되 법령 용어는 정확히 쓰세요.\n\n"
     "[검색된 조문]\n{context}\n\n"
@@ -144,55 +151,31 @@ def _llm_answer(query: str, chunks: list[RetrievedChunk]) -> tuple[str, float] |
         return None  # NotImplementedError(Day3 전)·재시도 소진 등 → 추출 모드 폴백
 
 
-def _extractive_answer(chunks: list[RetrievedChunk]) -> str:
-    """LLM 없이 검색 조문만으로 조립하는 안내문 — 생성이 없으므로 환각 0."""
-    refs = []
-    for c in chunks:
-        ref = f"{c['law_name']} {c['article']}"
-        if ref not in refs:
-            refs.append(ref)
-    return (
-        "문의하신 내용과 관련된 현행 법령 조문을 찾았습니다: "
-        + ", ".join(refs)
-        + ". 아래 근거 조문 원문(시행일 포함)과 검증된 공식 연락처를 확인해 주세요. "
-        "구체적인 적용은 상황에 따라 다를 수 있어 전문가 상담을 권합니다."
-    )
-
-
 def finance_agent(state: LegalState) -> dict:
+    query = state["user_query"]
     # 평어 질의를 법률 용어로 확장해 검색(임베딩) 입력만 보강 — 답변·인용은 원문 기준
-    chunks = _rag.search(_expand_query(state["user_query"]), k=3)
+    chunks = safe_search(_rag, _expand_query(query), k=3)
 
     if not chunks:
         # 검색 결과 없음 → 인용 0건 답변. verifier가 탈락시키고 planner가 정직 거절.
         answer_text, confidence, mode = "관련 조문을 찾지 못했습니다.", 0.0, "no-hit"
     else:
-        llm = _llm_answer(state["user_query"], chunks)
+        llm = _llm_answer(query, chunks)
         if llm is not None:
             answer_text, confidence = llm
             mode = "bedrock"
         else:
-            answer_text, confidence = _extractive_answer(chunks), _FALLBACK_CONFIDENCE
+            answer_text, confidence = extractive_answer(chunks), _FALLBACK_CONFIDENCE
             mode = "extractive"
 
-    answer: dict = {
-        "domain": "finance",
-        "answer": answer_text,
-        "citations": [
-            {
-                "law_name": c["law_name"], "article": c["article"],
-                "enforced_date": c["enforced_date"], "snippet": c["text"],
-                "source_url": c["source_url"],
-            } for c in chunks
-        ],
-        "contacts": get_contacts("finance"),
-        "confidence": confidence,
-    }
+    answer = build_domain_answer(
+        domain="finance",
+        answer=answer_text,
+        chunks=chunks,
+        confidence=confidence,
+    )
     rag_mode = "실모드" if _rag.is_real else "stub"
-    return {
-        "domain_answers": [answer],
-        "messages": [f"[finance] 실행됨 (RAG={rag_mode}, 답변={mode})"],
-    }
+    return domain_result("finance", answer, f"실행됨 (RAG={rag_mode}, 답변={mode})")
 
 
 def finance_draft(state: LegalState, doc_type: str | None = None) -> dict:
