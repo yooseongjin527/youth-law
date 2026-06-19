@@ -1,12 +1,21 @@
 """소비자보호 분야 전문가 — 담당 C 전용.
-finance.py와 동일한 안전 패턴 — 자기 분야 코퍼스(컬렉션)만 다름.
+
+공통 베이스(common/base_agent_answer)의 **잎 헬퍼를 그대로 사용**해
+불변식(검색 크래시 방지·DomainAnswer 조립·반환 구조·연락처·추출 폴백)을 베이스에
+위임한다(housing.py·finance.py와 동일 패턴). → 베이스가 바뀌면 consumer도 자동 추종.
 다루는 범위: 전자상거래·통신판매, 청약철회·환불, 온라인거래 분쟁(전자상거래소비자보호법).
+
+★ consumer 고유 정책 (베이스 plain 흐름에 없는 것) ★
+- _llm_answer: call_bedrock_json으로 answer + confidence(근거성 점수)를 받는다.
+  빈 답변은 None으로 떨궈 추출 폴백으로 보낸다(#4 빈 답 통과 방지).
+- 쿼리 확장(synonyms)은 **의도적으로 안 한다** — 홀드아웃 검증 결과 consumer는
+  BM25·동의어 이득이 박빙이라 순수 임베딩 단독이 더 단순·합리적(rag_hybrid 미사용).
 
 동작 모드 (어느 모드든 검색된 조문 밖 내용은 답변에 들어갈 수 없다 — 환각 방지):
   1) Bedrock 모드: common/llm.py 완성 시 자동 활성. 검색 조문만 근거로 생성하고
      JSON 형식(answer/confidence)을 강제(call_bedrock_json 하네스).
-  2) 폴백(추출) 모드: llm.py 미구현·호출 실패 시. 검색 조문을 '그대로' 안내문으로
-     조립한다 — 생성 자체가 없어 환각 0, 그래프·CI가 항상 동작.
+  2) 폴백(추출) 모드: llm.py 미구현·호출 실패 시. 베이스 extractive_answer로 검색
+     조문을 '그대로' 안내문으로 조립한다 — 생성 자체가 없어 환각 0, 그래프·CI가 항상 동작.
   ★ 호출 실패가 그래프를 죽이지 않도록 _llm_answer가 모든 예외를 흡수해 폴백한다. ★
 
 ────────────────────────────────────────────────────────
@@ -17,12 +26,23 @@ TODO 우선순위 (담당 C)
   [C/Day4] ④ 초안: 청약철회·환불 요구 내용증명 doc_type 점검
 ────────────────────────────────────────────────────────
 """
-from common.contacts import get_contacts
+from common.base_agent_answer import (
+    build_domain_answer,
+    domain_result,
+    extractive_answer,
+    safe_search,
+)
 from common.drafter import make_draft
 from common.rag import DomainRAG, RetrievedChunk
 from state import LegalState
 
 _rag = DomainRAG(domain="consumer", corpus_path="data/consumer")
+
+# 검색 결과 자체가 없을 때 — 환각 없이 정직 거절(낮은 confidence로 verifier 탈락).
+_NO_CHUNKS = (
+    "검색된 현행 법령 조문이 없어 정확한 답변을 드리기 어렵습니다. "
+    "아래 공식 기관 상담을 권합니다."
+)
 
 # 폴백(추출) 모드 confidence — 조문 원문을 그대로 안내하므로 근거성은 보장(verifier 0.5↑),
 # 생성 모드보다 보수적으로. 검색 적합도 품질은 scripts/evaluate.py hit@k로 측정.
@@ -46,7 +66,7 @@ _ANSWER_PROMPT = (
 
 
 def _format_context(chunks: list[RetrievedChunk]) -> str:
-    """검색 청크를 프롬프트용 컨텍스트 텍스트로."""
+    """검색 청크를 프롬프트용 컨텍스트 텍스트로 (consumer 프롬프트 전용 포맷)."""
     return "\n".join(
         f"({i}) {c['law_name']} {c['article']} (시행 {c['enforced_date']}): {c['text']}"
         for i, c in enumerate(chunks, start=1)
@@ -73,54 +93,29 @@ def _llm_answer(query: str, chunks: list[RetrievedChunk]) -> tuple[str, float] |
         return None  # NotImplementedError(Day3 전)·재시도 소진·네트워크 등 → 추출 모드
 
 
-def _extractive_answer(chunks: list[RetrievedChunk]) -> str:
-    """LLM 없이 검색 조문만으로 조립하는 안내문 — 생성이 없으므로 환각 0."""
-    refs: list[str] = []
-    for c in chunks:
-        ref = f"{c['law_name']} {c['article']}"
-        if ref not in refs:
-            refs.append(ref)
-    return (
-        "문의하신 내용과 관련된 현행 법령 조문을 찾았습니다: "
-        + ", ".join(refs)
-        + ". 아래 근거 조문 원문(시행일 포함)과 검증된 공식 연락처를 확인해 주세요. "
-        "구체적인 적용은 상황에 따라 다를 수 있어 전문가 상담을 권합니다."
-    )
-
-
 def consumer_agent(state: LegalState) -> dict:
-    chunks = _rag.search(state["user_query"], k=3)
+    query = state["user_query"]
+    chunks = safe_search(_rag, query, k=3)  # 베이스: 검색 크래시 방지(빈 리스트 폴백)
 
     if not chunks:
-        # 검색 결과 없음 → 인용 0건. verifier가 탈락시키고 planner가 정직 거절.
-        answer_text, confidence, mode = "관련 조문을 찾지 못했습니다.", 0.0, "no-hit"
+        # 빈 검색결과 → 인용 0건. verifier가 탈락시키고 planner가 정직 거절.
+        answer_text, confidence, mode = _NO_CHUNKS, 0.2, "no-hit"
     else:
-        llm = _llm_answer(state["user_query"], chunks)
+        llm = _llm_answer(query, chunks)
         if llm is not None:
             answer_text, confidence = llm
             mode = "bedrock"
         else:
-            answer_text, confidence = _extractive_answer(chunks), _FALLBACK_CONFIDENCE
+            # Bedrock 실패/미구현 — 베이스 extractive_answer로 검색 조문만 안내(정직 degraded).
+            answer_text, confidence = extractive_answer(chunks), _FALLBACK_CONFIDENCE
             mode = "extractive"
 
-    answer: dict = {
-        "domain": "consumer",
-        "answer": answer_text,
-        "citations": [
-            {
-                "law_name": c["law_name"], "article": c["article"],
-                "enforced_date": c["enforced_date"], "snippet": c["text"],
-                "source_url": c["source_url"],
-            } for c in chunks
-        ],
-        "contacts": get_contacts("consumer"),
-        "confidence": confidence,
-    }
-    rag_mode = "실모드" if _rag.is_real else "stub"
-    return {
-        "domain_answers": [answer],
-        "messages": [f"[consumer] 실행됨 (RAG={rag_mode}, 답변={mode})"],
-    }
+    # 베이스 조립 — citation은 검색 청크에서, 연락처·반환 구조는 베이스가 강제(환각 0).
+    answer = build_domain_answer(
+        domain="consumer", answer=answer_text, chunks=chunks, confidence=confidence,
+    )
+    rag_mode = "실모드" if getattr(_rag, "is_real", False) else "stub"
+    return domain_result("consumer", answer, f"실행됨 (RAG={rag_mode}, 답변={mode})")
 
 
 def consumer_draft(state: LegalState, doc_type: str | None = None) -> dict:
