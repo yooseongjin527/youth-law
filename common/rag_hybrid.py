@@ -42,10 +42,10 @@ _DEFAULT_ALPHA = 0.7
 # ★ 교훈: synonyms가 비면 BM25가 평어 토큰을 노이즈로 매칭 → 임베딩만 못함.
 #   synonyms 충실한 분야만 BM25를 낮은 α로 섞고, 빈 분야는 α=1.0(임베딩)로 둔다.
 _ALPHA_BY_DOMAIN = {
-    "finance": 0.6,    # synonyms 충실 → BM25 강력. hit@3 0.52→1.0
-    "labor":   0.7,    # 민지 synonyms 활용 → hit@3 0.65→0.90
-    "housing": 1.0,    # synonyms 비어 BM25=노이즈 → 임베딩 유지(0.875). 채우면 α↓
-    "consumer": 1.0,   # 동일 — 0.864 유지. 담당 C가 채우면 α↓
+    "finance": 0.6,    # synonyms 충실 → hit@3 0.52→1.0 (MRR 0.86)
+    "labor":   0.7,    # 민지 synonyms → hit@3 0.65→0.90
+    "housing": 0.9,    # synonyms 채움 → hit@3 0.875→1.0 (MRR 0.667→0.969)
+    "consumer": 0.9,   # synonyms 채움 → hit@3 0.864→1.0 (MRR 0.712→0.871)
 }
 _MAX_EXPANSION_TERMS = 6  # 너무 많이 붙이면 임베딩 희석 → 상한
 
