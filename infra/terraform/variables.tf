@@ -35,6 +35,12 @@ variable "db_password" {
   description = "RDS 마스터 비밀번호. terraform.tfvars에만 넣고 절대 커밋하지 않는다."
 }
 
+variable "enable_rds" {
+  type        = bool
+  default     = false
+  description = "RDS PostgreSQL(+서브넷그룹·RDS SG) 생성 여부. 기본 false = EC2만 올림(비용 절감). pgvector·상담로그 데모 임박 시 true. 비용 드라이버는 EC2이고 RDS micro는 4일 ~$2."
+}
+
 variable "enable_budgets" {
   type        = bool
   default     = false

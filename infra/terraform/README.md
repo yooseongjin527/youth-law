@@ -54,6 +54,22 @@ terraform apply
 출력으로 `ec2_public_ip`, `fastapi_url`, `s3_bucket`, `rds_endpoint` 등을 확인하고
 이후 단계는 `docs/INFRA_IMPLEMENTATION_GUIDE.md`(EC2 셋업 → 데이터 구축 → 앱 → DuckDNS/HTTPS)를 따른다.
 
+## 2단계 적용 — EC2 먼저, RDS는 나중에 (비용 절감)
+
+비용 드라이버는 EC2(t3.large)이고 RDS micro는 4일 ~$2뿐이지만, RDS는 pgvector·상담로그
+데모 임박 전엔 필요 없으므로 `enable_rds`로 분리한다.
+
+```bash
+# 1단계 — EC2만 (기본 enable_rds=false): plan 8개 (EC2/IAM/S3/SG/random)
+terraform apply
+
+# 2단계 — 데모 임박 시 RDS 추가: plan 11개 (DB 인스턴스+서브넷그룹+RDS SG)
+terraform apply -var="enable_rds=true"   # 또는 terraform.tfvars에서 enable_rds=true
+```
+
+EC2만 올린 동안 RDS 로깅(common/logging_store)·pgvector(RAG_BACKEND)는 자동으로 no-op/
+chroma로 동작하므로 앱은 정상이다. 주말엔 EC2를 stop(법 데이터 무변경)해 비용을 더 아낀다.
+
 ## 정리(비용 0으로)
 
 ```bash

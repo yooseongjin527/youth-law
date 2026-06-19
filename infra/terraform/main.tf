@@ -120,6 +120,7 @@ resource "aws_security_group" "app" {
 
 # ── 보안 그룹: RDS (앱 SG에서만 5432 허용, 퍼블릭 금지) ─────────────────────
 resource "aws_security_group" "rds" {
+  count       = var.enable_rds ? 1 : 0
   name        = "${var.project_name}-rds-sg"
   description = "Youth Law RDS security group"
   vpc_id      = data.aws_vpc.default.id
@@ -203,12 +204,14 @@ resource "aws_s3_bucket_public_access_block" "artifacts" {
 
 # ── RDS PostgreSQL (상담/비용/평가 로그 + pgvector 확장 대상) ───────────────
 resource "aws_db_subnet_group" "main" {
+  count      = var.enable_rds ? 1 : 0
   name       = "${var.project_name}-db-subnet-group"
   subnet_ids = data.aws_subnets.default.ids
   tags       = { Project = var.project_name }
 }
 
 resource "aws_db_instance" "postgres" {
+  count      = var.enable_rds ? 1 : 0
   identifier = "${var.project_name}-postgres"
   engine     = "postgres"
   # engine_version 미지정 시 최신 기본 PostgreSQL(pgvector 지원)이 선택된다.
@@ -220,8 +223,8 @@ resource "aws_db_instance" "postgres" {
   username = var.db_username
   password = var.db_password
 
-  db_subnet_group_name   = aws_db_subnet_group.main.name
-  vpc_security_group_ids = [aws_security_group.rds.id]
+  db_subnet_group_name   = aws_db_subnet_group.main[0].name
+  vpc_security_group_ids = [aws_security_group.rds[0].id]
 
   publicly_accessible = false
   multi_az            = false

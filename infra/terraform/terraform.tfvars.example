@@ -9,6 +9,10 @@ ec2_key_name     = "YOUR_KEYPAIR_NAME"
 db_username      = "youthlaw"
 db_password      = "CHANGE_ME_STRONG_PASSWORD"
 
+# RDS 생성 여부: 기본 false = EC2만 올림(비용 절감). pgvector·상담로그 데모 임박 시 true.
+# (false여도 db_username/db_password는 둬도 무방 — RDS 켤 때 그대로 쓰임)
+enable_rds       = false
+
 # 비용 알림: DE-AI 프로젝트 계정은 budgets 권한이 없어 false 유지.
 # budgets 권한 있는 계정에서만 true로 켜고 아래 두 값을 채운다.
 enable_budgets   = false

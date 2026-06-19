@@ -19,7 +19,7 @@ output "s3_bucket" {
 }
 
 output "rds_endpoint" {
-  value = aws_db_instance.postgres.address
+  value = var.enable_rds ? aws_db_instance.postgres[0].address : "(RDS disabled — enable_rds=false)"
 }
 
 output "ec2_iam_role" {
