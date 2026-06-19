@@ -7,24 +7,21 @@
 3) 연락처는 get_contacts로 검증 데이터에서 (LLM 생성 금지)
 4) DomainAnswer 반환
 
-────────────────────────────────────────────────────────
-TODO 우선순위 (담당 A)
-  [A/Day1] ① 노동 분야 데이터 수집 → scripts/build_index.py 의 load_corpus
-  [A/Day2] ② labor 컬렉션 인덱싱 (python scripts/build_index.py labor)
-  [A/Day3] ③ 아래 답변 생성을 Bedrock으로 (검색 조문 근거만, 환각 방지)
-  [A/Day4] ④ 답변-근거 정합성 체크 (검색 안 된 주장 제거)
-  --- 자기 분야 끝나면 아래 공용으로 ---
-  [공용] common/rag.py 고도화 / scripts 평가 / planner 답변 품질 개선
-────────────────────────────────────────────────────────
+★ 이번 변경 ★
+- 검색기: common/rag_hybrid.py 의 DomainRAG(BM25+임베딩 하이브리드, 분야별 α·쿼리확장).
+  common/rag.py 와 동일 인터페이스라 drop-in. (synonyms/labor.jsonl 기준 hit@3 0.65→0.90)
+- 불변식(빈 검색·Bedrock 실패 폴백·DomainAnswer 조립·반환 구조)은
+  common/base_agent_answer.py 의 run_domain_agent 가 한곳에서 강제.
+  → labor.py 는 '분야 특성'(검색기·프롬프트)만 주입한다.
 """
-from common.contacts import get_contacts
+from common.base_agent_answer import run_domain_agent
 from common.drafter import make_draft
-from common.llm import call_bedrock
-from common.rag import DomainRAG
+from common.rag_hybrid import DomainRAG
 from state import LegalState
 
 _rag = DomainRAG(domain="labor", corpus_path="data/labor")
 
+# 베이스 run_domain_agent 플레이스홀더: {query}, {context}
 _PROMPT_TEMPLATE = """
 당신은 청년 대상 노동법 상담사입니다. 아래 검색된 법령 조문만을 근거로 답변하세요.
 
@@ -38,35 +35,20 @@ _PROMPT_TEMPLATE = """
 {context}
 
 [질문]
-{question}
+{query}
 """
 
 
 def labor_agent(state: LegalState) -> dict:
-    query = state["user_query"]
-    chunks = _rag.search(query, k=3)
-
-    context = "\n\n".join(
-        f"[{c['law_name']} {c['article']}] (시행 {c['enforced_date']})\n{c['text']}"
-        for c in chunks
+    """노동 분야 전문가 노드 — 공통 흐름(run_domain_agent)에 분야 특성만 주입."""
+    return run_domain_agent(
+        state,
+        domain="labor",
+        rag=_rag,
+        prompt_template=_PROMPT_TEMPLATE,
+        search_k=3,
     )
-    prompt = _PROMPT_TEMPLATE.format(context=context, question=query)
-    answer_text = call_bedrock(prompt, task="answer")
 
-    answer: dict = {
-        "domain": "labor",
-        "answer": answer_text,
-        "citations": [
-            {
-                "law_name": c["law_name"], "article": c["article"],
-                "enforced_date": c["enforced_date"], "snippet": c["text"],
-                "source_url": c["source_url"],
-            } for c in chunks
-        ],
-        "contacts": get_contacts("labor"),
-        "confidence": 0.8,
-    }
-    return {"domain_answers": [answer], "messages": ["[labor] Bedrock 답변 생성 완료"]}
 
 def labor_draft(state: LegalState, doc_type: str | None = None) -> dict:
     """labor 분야 문서 초안 생성. 답변을 먼저 만든 뒤 그 근거로 초안 작성.
