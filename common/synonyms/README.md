@@ -13,11 +13,13 @@
 common/synonyms/
   labor.jsonl      ← 담당 A (노동)
   housing.jsonl    ← 담당 B (주거)
-  consumer.jsonl   ← 담당 C (소비자)
   finance.jsonl    ← 담당 D (금융)
 ```
 
-비어 있는 파일(housing/consumer)은 아직 미작성 상태입니다. 하이브리드 검색만으로도
+> consumer(담당 C)는 홀드아웃 검증 결과 BM25·동의어 확장 이득이 박빙이라 **순수 임베딩 단독**으로
+> 가기로 해 동의어 사전을 두지 않습니다(agents/consumer.py는 rag_hybrid를 쓰지 않음).
+
+비어 있는 파일(housing)은 아직 미작성 상태입니다. 하이브리드 검색만으로도
 현재 평가셋은 커버되며, 담당자가 아래 규칙대로 채우면 적중률이 더 올라갑니다.
 
 ## JSONL 형식
