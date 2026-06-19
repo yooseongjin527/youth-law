@@ -31,6 +31,7 @@ from agents.housing import housing_agent  # noqa: E402
 from agents.labor import labor_agent  # noqa: E402
 from agents.verifier import verifier_agent  # noqa: E402
 from common.cost import tracker  # noqa: E402
+from common.logging_store import save_eval_scorecard  # noqa: E402
 from common.rag import DomainRAG  # noqa: E402
 from state import DOMAINS  # noqa: E402
 
@@ -118,6 +119,7 @@ def run(domain: str) -> dict:
     out_dir.mkdir(exist_ok=True)
     with open(out_dir / f"{domain}_history.jsonl", "a") as f:
         f.write(json.dumps(result, ensure_ascii=False) + "\n")
+    save_eval_scorecard(result)  # RDS 로깅(꺼져 있으면 no-op)
     return result
 
 
