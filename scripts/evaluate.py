@@ -6,6 +6,7 @@
   python scripts/evaluate.py all                 # 4분야 전체
   python scripts/evaluate.py finance smoke       # 금융 smoke
   python scripts/evaluate.py finance benchmark   # 금융 benchmark
+  python scripts/evaluate.py finance benchmark retrieval  # 검색축만(Bedrock 호출 없음)
 
 무엇을 측정하나:
   [축① 평가]   hit@k, MRR — 평가셋(evals/<분야>.jsonl 또는 evals/<분야>_<split>.jsonl)
@@ -184,10 +185,18 @@ def eval_grounding(domain: str, split: str = "smoke") -> dict:
             "avg_citations": round(cite_total / n, 2)}
 
 
-def run(domain: str, split: str = "smoke") -> dict:
+def _empty_grounding(n: int) -> dict:
+    return {"n": n, "grounding_rate": None, "avg_citations": None}
+
+
+def run(domain: str, split: str = "smoke", include_grounding: bool = True) -> dict:
     tracker.reset()  # 이번 평가 실행의 비용만 측정
     retrieval = eval_retrieval(domain, split=split)  # 축① 평가
-    grounding = eval_grounding(domain, split=split)  # 축③ 환각 (LLM 호출 발생)
+    grounding = (
+        eval_grounding(domain, split=split)  # 축③ 환각 (LLM 호출 발생)
+        if include_grounding
+        else _empty_grounding(retrieval["n"])
+    )
     cost = tracker.report()                     # 축② 비용 — grounding의 LLM
                                                # 호출 누적분이라 그 뒤에 측정
 
@@ -195,6 +204,7 @@ def run(domain: str, split: str = "smoke") -> dict:
         "date": date.today().isoformat(),
         "domain": domain,
         "split": split,
+        "mode": "full" if include_grounding else "retrieval",
         "retrieval": retrieval,   # 축① 평가
         "cost": cost,             # 축② 비용
         "grounding": grounding,   # 축③ 환각
@@ -245,7 +255,7 @@ def print_scorecard(r: dict):
         f"평균 인용: {grd['avg_citations']}"
     )
     if cst["calls"] == 0:
-        print("            (LLM 호출 0회 — Bedrock 연결 전 stub 상태)")
+        print("            (LLM 호출 0회 — retrieval-only 또는 Bedrock 연결 전 stub 상태)")
     history_name = (
         f"{r['domain']}_history.jsonl"
         if r.get("split", "smoke") == "smoke"
@@ -257,15 +267,25 @@ def print_scorecard(r: dict):
 if __name__ == "__main__":
     target = sys.argv[1] if len(sys.argv) > 1 else "all"
     split = sys.argv[2] if len(sys.argv) > 2 else "smoke"
+    mode = sys.argv[3] if len(sys.argv) > 3 else "full"
     if target == "all" and split != "smoke":
         print("all 모드에서는 split을 지정하지 마세요")
         sys.exit(1)
     if target != "finance" and split != "smoke":
         print("benchmark split은 finance에서만 사용하세요")
         sys.exit(1)
+    if mode not in ("full", "retrieval"):
+        print("mode는 full 또는 retrieval")
+        sys.exit(1)
     domains = DOMAINS if target == "all" else [target]
     if any(d not in DOMAINS for d in domains):
         print(f"분야는 {DOMAINS} 또는 all")
         sys.exit(1)
     for d in domains:
-        print_scorecard(run(d, split=split if d == "finance" else "smoke"))
+        print_scorecard(
+            run(
+                d,
+                split=split if d == "finance" else "smoke",
+                include_grounding=mode == "full",
+            )
+        )

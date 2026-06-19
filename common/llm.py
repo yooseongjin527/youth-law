@@ -21,12 +21,31 @@ from common.cost import MODEL_TIERS, tracker
 _client = None  # bedrock-runtime 클라이언트 싱글톤 (임포트 시 AWS 의존 안 하도록 지연 생성)
 
 
+def _timeout(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, default))
+    except (TypeError, ValueError):
+        return default
+
+
 def _get_client():
     global _client
     if _client is None:
         import boto3  # 지연 임포트 — CI/오프라인에서 임포트만으로 실패하지 않게
+        from botocore.config import Config
+
+        config = Config(
+            connect_timeout=_timeout("BEDROCK_CONNECT_TIMEOUT", 3.0),
+            read_timeout=_timeout("BEDROCK_READ_TIMEOUT", 12.0),
+            retries={
+                "max_attempts": int(_timeout("BEDROCK_MAX_ATTEMPTS", 2.0)),
+                "mode": "standard",
+            },
+        )
         _client = boto3.client(
-            "bedrock-runtime", region_name=os.getenv("AWS_REGION", "us-west-2")
+            "bedrock-runtime",
+            region_name=os.getenv("AWS_REGION", "us-west-2"),
+            config=config,
         )
     return _client
 
