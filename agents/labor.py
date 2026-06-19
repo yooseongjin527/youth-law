@@ -19,18 +19,43 @@ TODO 우선순위 (담당 A)
 """
 from common.contacts import get_contacts
 from common.drafter import make_draft
+from common.llm import call_bedrock
 from common.rag import DomainRAG
 from state import LegalState
 
 _rag = DomainRAG(domain="labor", corpus_path="data/labor")
 
+_PROMPT_TEMPLATE = """
+당신은 청년 대상 노동법 상담사입니다. 아래 검색된 법령 조문만을 근거로 답변하세요.
+
+★ 규칙 ★
+- 검색된 조문 밖의 내용은 절대 포함하지 마세요 (환각 방지).
+- 법령명, 조번호, 시행일을 반드시 언급하세요.
+- 청년이 이해할 수 있는 쉬운 말로 답하세요.
+- 답변 끝에 "구체적 사건은 전문가 상담을 권합니다"를 붙이세요.
+
+[검색된 조문]
+{context}
+
+[질문]
+{question}
+"""
+
 
 def labor_agent(state: LegalState) -> dict:
-    chunks = _rag.search(state["user_query"], k=3)
-    # TODO(A/Day3): chunks 근거로 Bedrock 답변 생성. 검색 조문 밖 내용 금지.
+    query = state["user_query"]
+    chunks = _rag.search(query, k=3)
+
+    context = "\n\n".join(
+        f"[{c['law_name']} {c['article']}] (시행 {c['enforced_date']})\n{c['text']}"
+        for c in chunks
+    )
+    prompt = _PROMPT_TEMPLATE.format(context=context, question=query)
+    answer_text = call_bedrock(prompt, task="answer")
+
     answer: dict = {
         "domain": "labor",
-        "answer": "stub: 노동법 관점 답변 (임금체불·부당해고 등)",
+        "answer": answer_text,
         "citations": [
             {
                 "law_name": c["law_name"], "article": c["article"],
@@ -41,7 +66,7 @@ def labor_agent(state: LegalState) -> dict:
         "contacts": get_contacts("labor"),
         "confidence": 0.8,
     }
-    return {"domain_answers": [answer], "messages": ["[labor] stub 실행됨 (RAG)"]}
+    return {"domain_answers": [answer], "messages": ["[labor] Bedrock 답변 생성 완료"]}
 
 def labor_draft(state: LegalState, doc_type: str | None = None) -> dict:
     """labor 분야 문서 초안 생성. 답변을 먼저 만든 뒤 그 근거로 초안 작성.
