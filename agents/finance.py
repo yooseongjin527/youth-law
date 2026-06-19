@@ -18,7 +18,7 @@ TODO 우선순위 (담당 D)
   [D/Day4] ④ 초안: 채무조정(개인회생) 신청 안내 doc_type 추가
 ────────────────────────────────────────────────────────
 """
-from common.base_agent_mk_20260618_ import (
+from common.base_agent_answer import (
     build_domain_answer,
     domain_result,
     extractive_answer,
