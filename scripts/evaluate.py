@@ -1,18 +1,21 @@
 """3축 개선 루프 — 각자 자기 분야를 평가/비용/환각 측면에서 측정한다.
 
 사용법:
-  python scripts/evaluate.py labor      # 담당 A
-  python scripts/evaluate.py housing    # 담당 B  (consumer=C, finance=D)
-  python scripts/evaluate.py all        # 4분야 전체
+  python scripts/evaluate.py labor               # 담당 A
+  python scripts/evaluate.py housing             # 담당 B  (consumer=C, finance=D)
+  python scripts/evaluate.py all                 # 4분야 전체
+  python scripts/evaluate.py finance smoke       # 금융 smoke
+  python scripts/evaluate.py finance benchmark   # 금융 benchmark
 
 무엇을 측정하나:
-  [축① 평가]   hit@k, MRR — 평가셋(evals/<분야>.jsonl) 질문으로 검색했을 때
-               정답 조문이 top-k에 들어오는 비율
+  [축① 평가]   hit@k, MRR — 평가셋(evals/<분야>.jsonl 또는 evals/<분야>_<split>.jsonl)
+               질문으로 검색했을 때 정답 조문이 top-k에 들어오는 비율
   [축② 비용]   이번 평가 실행 동안의 토큰·비용 (common/cost.py tracker)
   [축③ 환각]   grounding rate — 에이전트 답변이 verifier 검증을 통과하는 비율
                + 평균 인용 수 (근거가 얼마나 붙는가)
 
 결과는 evals/results/<분야>_history.jsonl에 날짜와 함께 누적
+금융 benchmark는 evals/results/<분야>_benchmark_history.jsonl에 따로 누적
 → Day2(단순검색) vs Day5(하이브리드) 비교가 발표 자료가 된다.
 
 개선 루프:
@@ -54,8 +57,10 @@ _FINANCE_CATEGORY_LABELS = {
 _EVAL_DIR = Path(__file__).resolve().parent.parent / "evals"
 
 
-def load_eval_set(domain: str) -> list[dict]:
-    path = _EVAL_DIR / f"{domain}.jsonl"
+def load_eval_set(domain: str, split: str = "smoke") -> list[dict]:
+    path = _EVAL_DIR / (
+        f"{domain}.jsonl" if split == "smoke" else f"{domain}_{split}.jsonl"
+    )
     if not path.exists():
         return []
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
@@ -82,9 +87,9 @@ def _item_category(item: dict) -> str:
     return "uncategorized"
 
 
-def eval_retrieval(domain: str, k: int = 3) -> dict:
+def eval_retrieval(domain: str, k: int = 3, split: str = "smoke") -> dict:
     """[축① 평가] hit@k + MRR."""
-    items = load_eval_set(domain)
+    items = load_eval_set(domain, split=split)
     if not items:
         return {"n": 0, "hit_at_k": None, "mrr": None, "by_category": {}}
     rag = DomainRAG(domain=domain)
@@ -122,9 +127,9 @@ def eval_retrieval(domain: str, k: int = 3) -> dict:
     }
 
 
-def eval_grounding(domain: str) -> dict:
+def eval_grounding(domain: str, split: str = "smoke") -> dict:
     """[축③ 환각] 에이전트 답변의 verifier 통과율 + 평균 인용 수."""
-    items = load_eval_set(domain)
+    items = load_eval_set(domain, split=split)
     if not items:
         return {"n": 0, "grounding_rate": None, "avg_citations": None}
     agent = _AGENTS[domain]
@@ -146,16 +151,17 @@ def eval_grounding(domain: str) -> dict:
             "avg_citations": round(cite_total / n, 2)}
 
 
-def run(domain: str) -> dict:
+def run(domain: str, split: str = "smoke") -> dict:
     tracker.reset()  # 이번 평가 실행의 비용만 측정
-    retrieval = eval_retrieval(domain)          # 축① 평가
-    grounding = eval_grounding(domain)          # 축③ 환각 (LLM 호출 발생)
+    retrieval = eval_retrieval(domain, split=split)  # 축① 평가
+    grounding = eval_grounding(domain, split=split)  # 축③ 환각 (LLM 호출 발생)
     cost = tracker.report()                     # 축② 비용 — grounding의 LLM
                                                # 호출 누적분이라 그 뒤에 측정
 
     result = {                                  # 표시·저장은 축 번호순(①②③)
         "date": date.today().isoformat(),
         "domain": domain,
+        "split": split,
         "retrieval": retrieval,   # 축① 평가
         "cost": cost,             # 축② 비용
         "grounding": grounding,   # 축③ 환각
@@ -164,14 +170,16 @@ def run(domain: str) -> dict:
     # 이력 누적 → 개선 추이 (Day2 vs Day5 비교가 발표 자료)
     out_dir = _EVAL_DIR / "results"
     out_dir.mkdir(exist_ok=True)
-    with open(out_dir / f"{domain}_history.jsonl", "a") as f:
+    history_name = f"{domain}_history.jsonl" if split == "smoke" else f"{domain}_{split}_history.jsonl"
+    with open(out_dir / history_name, "a") as f:
         f.write(json.dumps(result, ensure_ascii=False) + "\n")
     return result
 
 
 def print_scorecard(r: dict):
     print(f"\n{'='*52}")
-    print(f"  [{r['domain']}] 3축 스코어카드  ({r['date']})")
+    title = r["domain"] if r.get("split", "smoke") == "smoke" else f"{r['domain']}[{r['split']}]"
+    print(f"  [{title}] 3축 스코어카드  ({r['date']})")
     print(f"{'='*52}")
     ret, grd, cst = r["retrieval"], r["grounding"], r["cost"]
     print(
@@ -197,14 +205,26 @@ def print_scorecard(r: dict):
     )
     if cst["calls"] == 0:
         print("            (LLM 호출 0회 — Bedrock 연결 전 stub 상태)")
-    print(f"  → 이력 저장: evals/results/{r['domain']}_history.jsonl")
+    history_name = (
+        f"{r['domain']}_history.jsonl"
+        if r.get("split", "smoke") == "smoke"
+        else f"{r['domain']}_{r['split']}_history.jsonl"
+    )
+    print(f"  → 이력 저장: evals/results/{history_name}")
 
 
 if __name__ == "__main__":
     target = sys.argv[1] if len(sys.argv) > 1 else "all"
+    split = sys.argv[2] if len(sys.argv) > 2 else "smoke"
+    if target == "all" and split != "smoke":
+        print("all 모드에서는 split을 지정하지 마세요")
+        sys.exit(1)
+    if target != "finance" and split != "smoke":
+        print("benchmark split은 finance에서만 사용하세요")
+        sys.exit(1)
     domains = DOMAINS if target == "all" else [target]
     if any(d not in DOMAINS for d in domains):
         print(f"분야는 {DOMAINS} 또는 all")
         sys.exit(1)
     for d in domains:
-        print_scorecard(run(d))
+        print_scorecard(run(d, split=split if d == "finance" else "smoke"))

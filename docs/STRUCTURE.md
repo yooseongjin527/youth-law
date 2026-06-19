@@ -61,7 +61,8 @@ youth_law/
 │   ├── results/           #  evaluate.py 실행 이력 (날짜별 누적 → 발표 자료)
 │   │   └── .gitkeep       #   빈 폴더를 깃이 유지하게 하는 표시 파일
 │   ├── consumer.jsonl     #  [담당 C] 소비자 평가셋
-│   ├── finance.jsonl      #  [담당 D] 금융 평가셋
+│   ├── finance.jsonl      #  [담당 D] 금융 smoke 평가셋
+│   ├── finance_benchmark.jsonl  #  [담당 D] 금융 benchmark 평가셋
 │   ├── housing.jsonl      #  [담당 B] 주택 평가셋
 │   ├── labor.jsonl        #  [담당 A] 노동 평가셋 (각자 10~20개로 확장)
 │   └── README.md          #  평가셋 작성법 (형식·예시)

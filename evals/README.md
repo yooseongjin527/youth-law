@@ -7,7 +7,11 @@
 - 질문은 실제 사용자처럼 평어로 (법률 용어 없이)
 - expected_articles는 "법령명 제N조" 형식 — 검색 결과의 law_name+article과 대조됨
 - 좋은 평가셋 = 쉬운 것·어려운 것·애매한 것 섞기
+- finance smoke: `evals/finance.jsonl` (회귀/스모크용)
+- finance benchmark: `evals/finance_benchmark.jsonl` (확장 평가용)
 - finance는 하위 법군이 많아 category별 리포트를 같이 보는 걸 권장
 
 실행: `python scripts/evaluate.py labor`
-결과는 results/<분야>_history.jsonl에 날짜와 함께 누적 → 개선 추이가 발표 자료가 됨.
+금융 benchmark 실행: `python scripts/evaluate.py finance benchmark`
+결과는 results/<분야>_history.jsonl에 날짜와 함께 누적.
+benchmark는 results/<분야>_benchmark_history.jsonl로 따로 쌓인다.
