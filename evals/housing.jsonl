@@ -14,3 +14,39 @@
 {"question": "전에 5% 넘게 올려준 게 있는데 돌려받을 수 있나요", "expected_articles": ["주택임대차보호법 제10조의2"], "note": "초과 차임 반환"}
 {"question": "계약 전에 집주인 체납 세금이나 선순위 보증금을 확인할 수 있나요", "expected_articles": ["주택임대차보호법 제3조의7"], "note": "임대인 정보제시 의무(전세사기 방지)"}
 {"question": "보증금 문제로 소송 말고 조정받을 수 있는 데가 있나요", "expected_articles": ["주택임대차보호법 제14조", "주택임대차보호법 제21조"], "note": "분쟁조정위원회·조정의 신청"}
+{"question": "같이 살던 가족이 돌아가셨는데 남은 동거인이 계속 살 수 있나요", "expected_articles": ["주택임대차보호법 제9조"], "note": "주택 임차권의 승계"}
+{"question": "계약서에 보증금 일부는 못 돌려받아도 된다는 특약이 있는데 유효한가요", "expected_articles": ["주택임대차보호법 제10조"], "note": "강행규정 — 임차인에 불리한 약정 무효"}
+{"question": "전세인데 등기를 안 했어요. 그래도 이 법으로 보호받나요", "expected_articles": ["주택임대차보호법 제12조"], "note": "미등기 전세 준용"}
+{"question": "경매에서 보증금을 다 못 받으면 제 임차권은 사라지나요", "expected_articles": ["주택임대차보호법 제3조의5"], "note": "경매에 의한 임차권의 소멸(보증금 미변제 시 예외)"}
+{"question": "보증금 돌려받는 소송은 일반 소송보다 간단한 절차가 있나요", "expected_articles": ["주택임대차보호법 제13조"], "note": "소액사건심판법 준용"}
+{"question": "전세 계약이 끝났는데 보증금을 돌려주지 않아요", "expected_articles": ["주택임대차보호법 제3조의2", "주택임대차보호법 제3조의3"], "note": "보증금 미반환", "group": "보증금미반환"}
+{"question": "집주인이 보증금 반환을 거부하고 있어요", "expected_articles": ["주택임대차보호법 제3조의2", "주택임대차보호법 제3조의3"], "note": "보증금 미반환", "group": "보증금미반환"}
+{"question": "만기인데 보증금을 안 줘요. 받아낼 방법이 있나요", "expected_articles": ["주택임대차보호법 제3조의2", "주택임대차보호법 제3조의3"], "note": "보증금 미반환", "group": "보증금미반환"}
+{"question": "집주인이 임대료를 올리겠다고 통보했어요", "expected_articles": ["주택임대차보호법 제7조"], "note": "차임 증액", "group": "차임증액"}
+{"question": "월세를 인상하자는데 한도가 있나요", "expected_articles": ["주택임대차보호법 제7조"], "note": "차임 증액", "group": "차임증액"}
+{"question": "차임을 너무 많이 올려달라고 해요", "expected_articles": ["주택임대차보호법 제7조"], "note": "차임 증액", "group": "차임증액"}
+{"question": "임대차 기간이 끝나가는데 계속 살고 싶어요", "expected_articles": ["주택임대차보호법 제6조의3"], "note": "계약갱신요구권", "group": "갱신요구"}
+{"question": "재계약 갱신을 요구하면 거절당할 수 있나요", "expected_articles": ["주택임대차보호법 제6조의3"], "note": "계약갱신요구권", "group": "갱신요구"}
+{"question": "2년 더 연장하고 싶은데 그런 권리가 있나요", "expected_articles": ["주택임대차보호법 제6조의3"], "note": "계약갱신요구권", "group": "갱신요구"}
+{"question": "보증금이 소액인데 다른 채권자보다 먼저 받을 수 있나요", "expected_articles": ["주택임대차보호법 제8조"], "note": "소액임차인 최우선변제", "group": "소액최우선"}
+{"question": "전세금이 적으면 우선 변제받을 수 있나요", "expected_articles": ["주택임대차보호법 제8조"], "note": "소액임차인 최우선변제", "group": "소액최우선"}
+{"question": "근저당보다 제 보증금을 먼저 돌려받을 수 있나요", "expected_articles": ["주택임대차보호법 제8조"], "note": "소액임차인 최우선변제", "group": "소액최우선"}
+{"question": "자동 연장된 계약을 중간에 끝낼 수 있나요", "expected_articles": ["주택임대차보호법 제6조의2"], "note": "묵시 갱신 시 해지", "group": "묵시갱신해지"}
+{"question": "묵시적 갱신 상태에서 나가려면 어떻게 하나요", "expected_articles": ["주택임대차보호법 제6조의2"], "note": "묵시 갱신 시 해지", "group": "묵시갱신해지"}
+{"question": "계약이 자동 연장됐는데 이사 가고 싶어요", "expected_articles": ["주택임대차보호법 제6조의2"], "note": "묵시 갱신 시 해지", "group": "묵시갱신해지"}
+{"question": "계약갱신은 언제까지 신청해야 하나요", "expected_articles": ["주택임대차보호법 제6조의3"], "note": "계약갱신 신청 시기"}
+{"question": "계약갱신 요구는 구두로 해도 되나요 문자로 남겨야 하나요", "expected_articles": ["주택임대차보호법 제6조의3"], "note": "계약갱신 요구 방법"}
+{"question": "미리 갱신을 안 하기로 약속하면 그 약정이 유효한가요", "expected_articles": ["주택임대차보호법 제6조의3", "주택임대차보호법 제10조"], "note": "갱신요구권 사전포기·강행규정"}
+{"question": "집주인이 실거주한다며 갱신을 거절하고 다른 사람에게 세를 줬어요. 보상받을 수 있나요", "expected_articles": ["주택임대차보호법 제6조의3"], "note": "실거주 사칭 갱신거절 손해배상"}
+{"question": "자동으로 갱신된 거랑 제가 갱신 요구한 거랑 뭐가 다른가요", "expected_articles": ["주택임대차보호법 제6조", "주택임대차보호법 제6조의3"], "note": "묵시적 갱신 vs 계약갱신요구"}
+{"question": "5% 상한이면 무조건 5%를 올려야 하는 건가요", "expected_articles": ["주택임대차보호법 제7조"], "note": "증액 상한 오해"}
+{"question": "제 동의 없이도 집주인이 임대료를 올릴 수 있나요", "expected_articles": ["주택임대차보호법 제7조"], "note": "증액은 협의 사항"}
+{"question": "전입신고를 안 하면 무슨 일이 생기나요", "expected_articles": ["주택임대차보호법 제3조"], "note": "전입신고 미이행 시 대항력 없음"}
+{"question": "확정일자랑 전입신고는 뭐가 다른가요", "expected_articles": ["주택임대차보호법 제3조", "주택임대차보호법 제3조의2"], "note": "대항력 vs 우선변제권"}
+{"question": "집주인이 바뀌었는데 계속 살 수 있나요", "expected_articles": ["주택임대차보호법 제3조"], "note": "대항력 — 양수인 승계"}
+{"question": "회사 법인 이름으로 세를 들면 이 법이 적용되나요", "expected_articles": ["주택임대차보호법 제2조"], "note": "적용 범위(법인 원칙적 제외)"}
+{"question": "한두 달만 잠깐 빌리는 것도 이 법이 적용되나요", "expected_articles": ["주택임대차보호법 제11조"], "note": "일시사용 임대차 제외"}
+{"question": "월세를 두 번 밀렸는데 바로 쫓겨나나요", "expected_articles": ["주택임대차보호법 제6조의3"], "note": "2기 연체 — 갱신거절 사유"}
+{"question": "월급을 3개월째 못 받고 있어요", "expected_articles": [], "note": "범위 밖(노동)", "group": "out_of_scope"}
+{"question": "인터넷 쇼핑몰에서 산 옷을 환불받고 싶어요", "expected_articles": [], "note": "범위 밖(소비자)", "group": "out_of_scope"}
+{"question": "친구가 빌려간 돈을 안 갚아요", "expected_articles": [], "note": "범위 밖(민사 대여금)", "group": "out_of_scope"}
