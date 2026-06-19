@@ -1,26 +1,33 @@
-"""[개발 스테이징 — 정성헌 / 2026-06-17] 검색 고도화 rag (공용 common/rag.py 후보).
+"""[통합 후보 — common/rag.py 승격 대기] 하이브리드 검색 RAG.
 
-⚠️ 이 파일은 PR 전 개인 개발본이다. 공용 common/rag.py는 건드리지 않는다.
-    검증이 끝나면 이 로직을 common/rag.py로 올리는 PR을 별도로 낸다(전원 승인).
-    파일명에 하이픈이 있어 import 불가 → '실행형'으로 구성(맨 아래 평가 진입점).
+⚠️ 이 파일은 아직 공용 common/rag.py가 아니다. 두 실험본을 하나로 합친 '후보'다.
+    팀 리뷰(PR) + 전원 동의 후에야 이 로직을 common/rag.py로 승격한다.
+    그 전까지 prod 경로(common/rag.py, agents/*.py)는 그대로 둔다.
 
-담은 것 (finance에서 hit@3 0.52→1.0, held-out 0.857로 검증된 조합을 4분야로 일반화):
-  ① 하이브리드 검색  : BM25(kiwipiepy 형태소) + 임베딩 가중결합  (구 PR #17 로직)
-  ② 분야별 쿼리확장  : 평어→법률어. ★전역 금지★ {domain: MAP}로 분야 한정(타 분야 오염 방지)
-  ③ 분야별 α        : HYBRID_ALPHA 전역 단일 → {domain: α}. finance=0.6 확정, 나머지 스윕 대상
-  ④ 정의 의도 공통처리: "뭔가요/무엇/뜻"→"용어의 정의"(고-IDF). 분야 불문 일반화 확인됨
-  (보류) cross-encoder 리랭킹 → v2 (한국어 법령서 성능저하 확인)
+합친 것 (브리프 §6 추천 절충안):
+  · 검색 로직   = 성헌 실험본 : BM25(kiwipiepy) + 임베딩 가중결합, 분야별 α, 정의의도 공통처리
+  · 파일 구조   = 민지 실험본 : 쿼리확장 map을 common/synonyms/<domain>.jsonl로 분리 + 로드/캐싱
+  · 매칭 방식   = 성헌 실험본 : substring(`key in query`) — 긴 평어 트리거 보존
+                  (민지 토큰매칭은 긴 트리거가 안 잡혀 채택 안 함)
+  (보류) cross-encoder 리랭킹 → 한국어 법령서 성능저하 확인되어 v2로
 
-실행:
-  python common/rag-정성헌-061726.py finance     # finance 평가셋으로 hit@3/MRR + α 스윕
-  python common/rag-정성헌-061726.py all          # 데이터 적재된 분야 전부
+승격 시 추가 작업(이번 PR 범위 아님):
+  · 이 파일 로직을 common/rag.py로 이전
+  · agents/finance.py 내부 _FINANCE_SYNONYMS / _expand_query 제거(중복 확장 방지)
+
+실행(검색축만 — Bedrock 불필요):
+  .venv/bin/python common/rag_hybrid.py finance   # finance 평가셋 hit@3/MRR + α 스윕
+  .venv/bin/python common/rag_hybrid.py all       # 데이터 적재된 분야 전부
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
+from pathlib import Path
 
-# 이 파일을 'python common/rag-...py'로 직접 실행할 때 repo 루트를 path에 (pipeline import용)
+# 'python common/rag_hybrid.py'로 직접 실행 시 repo 루트를 path에 (pipeline import용).
+# 모듈로 import될 땐 이미 path에 있어 no-op.
 _REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _REPO not in sys.path:
     sys.path.insert(0, _REPO)
@@ -29,73 +36,55 @@ from typing import TypedDict  # noqa: E402
 
 from pipeline.config import CHROMA_DIR, EMBED_MODEL  # noqa: E402
 
-# ── 분야별 튜닝 노브 (③) ────────────────────────────────────────────
+# ── 분야별 튜닝 노브 ────────────────────────────────────────────────
 _DEFAULT_ALPHA = 0.7
+# α=1.0 = 임베딩만, α↓일수록 BM25 비중↑. 분야별 스윕으로 '비퇴화' 확정(현 평가셋 기준).
+# ★ 교훈: synonyms가 비면 BM25가 평어 토큰을 노이즈로 매칭 → 임베딩만 못함.
+#   synonyms 충실한 분야만 BM25를 낮은 α로 섞고, 빈 분야는 α=1.0(임베딩)로 둔다.
 _ALPHA_BY_DOMAIN = {
-    "finance": 0.6,   # 스윕 결과 확정 (hit@3 1.0 + MRR 최고)
-    "labor": 0.7,     # 데이터 받으면 스윕
-    "housing": 0.7,
-    "consumer": 0.7,
+    "finance": 0.6,    # synonyms 충실 → BM25 강력. hit@3 0.52→1.0
+    "labor":   0.7,    # 민지 synonyms 활용 → hit@3 0.65→0.90
+    "housing": 1.0,    # synonyms 비어 BM25=노이즈 → 임베딩 유지(0.875). 채우면 α↓
+    "consumer": 1.0,   # 동일 — 0.864 유지. 담당 C가 채우면 α↓
 }
 _MAX_EXPANSION_TERMS = 6  # 너무 많이 붙이면 임베딩 희석 → 상한
 
-# ── 정의(definition) 의도 — 분야 공통 (④) ──────────────────────────
+# ── 정의(definition) 의도 — 분야 공통 ───────────────────────────────
 # "용어/정의"는 각 법의 '정의' 조문에만 나오는 고-IDF 토큰이라 BM25 변별력이 크다.
 _DEFINITION_TRIGGERS = ("뭔가요", "뭐예요", "뭐야", "무엇", "뜻이")
 _DEFINITION_TERM = "용어의 정의"
 
-# ── 분야별 쿼리확장 사전 (②) — 각 분야 담당이 자기 MAP 기여 ───────────
-# 트리거(평어 부분문자열) → 덧붙일 법률 용어. 검색(임베딩·BM25) 입력에만 적용.
-_SYNONYMS_BY_DOMAIN: dict[str, dict[str, list[str]]] = {
-    "finance": {
-        # 보이스피싱·전기통신금융사기 — 방향이 갈려 우산용어/송금방향 분리
-        "보이스피싱": ["전기통신금융사기"],
-        "보냈": ["피해구제 신청", "지급정지"],
-        "송금": ["피해구제 신청", "지급정지"],
-        "사기": ["전기통신금융사기", "지급정지", "사기이용계좌"],
-        "돌려받": ["피해환급금", "채권소멸절차", "지급정지"],
-        "통장": ["사기이용계좌", "명의인", "전자금융거래 제한"],
-        "전화번호": ["전화번호 이용중지"],
-        "억울": ["지급정지 이의제기"],
-        # 개인회생·파산·면책
-        "개인회생": ["개인회생절차 개시", "변제계획안"],
-        "빚": ["채무", "변제"],
-        "파산": ["파산선고", "면책"],
-        "면책": ["면책 신청", "면책 기각사유"],
-        "계획서": ["변제계획안 제출"],
-        # 불법추심
-        "협박": ["폭행·협박 등 금지", "불공정한 행위"],
-        "찾아": ["야간 방문", "반복적인 방문"],
-        "변호사": ["채무자 대리인", "대리인 연락 금지"],
-        "가족": ["관계인 연락 금지", "개인정보 누설"],
-        "부모님": ["관계인 연락 금지", "개인정보 누설"],  # held-out H4 보강
-        "동료": ["관계인 연락 금지"],
-        "독촉": ["복수 채권추심 위임 금지", "반복 추심"],
-        "서류": ["채무확인서 교부"],
-        "비용": ["채권추심 비용", "부당한 비용 청구"],
-        "추심": ["채권추심", "불공정한 행위"],
-        # 사금융
-        "이자": ["이자율 제한"],
-        "능력": ["과잉 대부 금지"],
-        "사채": ["미등록 대부업자", "불법사금융"],
-        "무등록": ["미등록 대부업자", "대부계약 효력"],
-        "광고": ["허위·과장 광고 금지"],
-        "수수료": ["부대비용"],
-    },
-    "labor": {},     # TODO(담당 A): 노동 동의어 — 데이터 받으면 채움
-    "housing": {},   # TODO(담당 B)
-    "consumer": {},  # TODO(담당 C)
-}
+# ── 분야별 쿼리확장 사전 (민지식 파일 분리) ──────────────────────────
+_SYNONYMS_DIR = Path(__file__).parent / "synonyms"
+_synonym_cache: dict[str, dict[str, list[str]]] = {}
+
+
+def _load_synonyms(domain: str) -> dict[str, list[str]]:
+    """common/synonyms/<domain>.jsonl 을 로드하고 캐싱한다. 파일 없으면 빈 맵."""
+    if domain in _synonym_cache:
+        return _synonym_cache[domain]
+    syn_map: dict[str, list[str]] = {}
+    path = _SYNONYMS_DIR / f"{domain}.jsonl"
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            entry = json.loads(line)
+            syn_map[entry["key"]] = entry["synonyms"]
+    _synonym_cache[domain] = syn_map
+    return syn_map
 
 
 def _expand_query(domain: str, query: str) -> str:
     """평어 질의에 (정의 의도 + 분야별 동의어)를 덧붙여 검색 적중률을 높인다.
-    트리거가 실제 질의에 있을 때만 추가(무관 용어 희석 방지). 상한 _MAX_EXPANSION_TERMS."""
+    트리거가 질의에 substring으로 있을 때만 추가(무관 용어 희석 방지). 상한 _MAX_EXPANSION_TERMS.
+    ★검색(임베딩·BM25) 입력에만 적용 — 답변·인용과 무관."""
     extra: list[str] = []
     if any(t in query for t in _DEFINITION_TRIGGERS):
         extra.append(_DEFINITION_TERM)
-    for trigger, terms in _SYNONYMS_BY_DOMAIN.get(domain, {}).items():
-        if trigger in query:
+    for key, terms in _load_synonyms(domain).items():
+        if key in query:                 # ★ substring 매칭 (성헌 방식)
             for t in terms:
                 if t not in extra:
                     extra.append(t)
@@ -134,14 +123,17 @@ def _get_kiwi():
 
 
 def _tokenize_ko(text: str) -> list[str]:
-    """형태소 단위 토크나이징 — 명사/동사/형용사 어근만(조사·어미 제거)."""
+    """형태소 단위 토크나이징 — 명사/동사/형용사 어근만(조사·어미 제거). BM25용."""
     tokens = _get_kiwi().tokenize(text)
     pos = {"NNG", "NNP", "NNB", "VV", "VA", "SL"}
     return [t.form for t in tokens if t.tag in pos]
 
 
 class DomainRAG:
-    """한 분야 컬렉션(law_{domain}) 검색기 — 하이브리드 + 분야별 확장/α."""
+    """한 분야 컬렉션(law_{domain}) 검색기 — 하이브리드 + 분야별 확장/α.
+
+    common/rag.py의 DomainRAG와 동일한 공개 인터페이스(domain, is_real, search)를 유지한다
+    → 승격 시 drop-in 교체 가능."""
 
     def __init__(self, domain: str, corpus_path: str | None = None):
         self.domain = domain
@@ -152,15 +144,15 @@ class DomainRAG:
         self._bm25_corpus_docs: list[dict] = []
         # 분야별 α (env HYBRID_ALPHA가 있으면 스윕용으로 우선)
         self.alpha = float(os.getenv("HYBRID_ALPHA", _ALPHA_BY_DOMAIN.get(domain, _DEFAULT_ALPHA)))
-        try:
+        try:  # 실제 백엔드 연결 시도 — 실패 시 stub 폴백
             import chromadb
             client = chromadb.PersistentClient(path=str(CHROMA_DIR))
             col = client.get_or_create_collection(self.collection_name)
-            if col.count() > 0:
+            if col.count() > 0:               # 데이터가 있어야 실모드
                 self.collection = col
-                self._build_bm25_index()
+                self._build_bm25_index()      # Chroma 데이터로 BM25 인덱스 구축
         except Exception:
-            self.collection = None
+            self.collection = None            # 폴백 (라이브러리 없음/미적재)
 
     @property
     def is_real(self) -> bool:
@@ -171,6 +163,7 @@ class DomainRAG:
         return self._bm25 is not None
 
     def _build_bm25_index(self) -> None:
+        """Chroma 컬렉션의 전체 문서로 BM25 인덱스를 구축한다. rank_bm25 없으면 임베딩-only."""
         try:
             from rank_bm25 import BM25Okapi
         except ImportError:
@@ -190,7 +183,7 @@ class DomainRAG:
         """질의 → (분야별 확장) → 하이브리드/임베딩 검색 top-k."""
         if not self.is_real:
             return self._search_stub(k)
-        eq = _expand_query(self.domain, query)  # ★검색 입력만 확장(답변·인용 무관)
+        eq = _expand_query(self.domain, query)   # ★검색 입력만 확장
         if self.has_bm25:
             return self._search_hybrid(eq, k)
         return self._search_embedding_only(eq, k)
@@ -211,15 +204,15 @@ class DomainRAG:
         emb = _get_model().encode([query]).tolist()
         eres = self.collection.query(query_embeddings=emb, n_results=fetch_k)
         emb_scores, data = {}, {}
-        for doc, meta, dist in zip(eres["documents"][0], eres["metadatas"][0], eres["distances"][0]):
+        edocs, emetas, edists = eres["documents"][0], eres["metadatas"][0], eres["distances"][0]
+        for doc, meta, dist in zip(edocs, emetas, edists):
             did = f"{meta['law_name']}_{meta['article']}"
             emb_scores[did] = 1 - dist
             data[did] = {"law_name": meta["law_name"], "article": meta["article"],
                          "enforced_date": meta["enforced_date"], "text": doc,
                          "source_url": meta["source_url"]}
         # ② BM25
-        tok = _tokenize_ko(query)
-        raw = self._bm25.get_scores(tok)
+        raw = self._bm25.get_scores(_tokenize_ko(query))
         bmax = max(raw) if max(raw) > 0 else 1.0
         bm_scores = {}
         for idx in sorted(range(len(raw)), key=lambda i: raw[i], reverse=True)[:fetch_k]:
@@ -227,7 +220,7 @@ class DomainRAG:
             did = f"{cd['law_name']}_{cd['article']}"
             bm_scores[did] = raw[idx] / bmax
             data.setdefault(did, cd)
-        # ③ 가중결합 (분야별 α)
+        # ③ 가중결합 (분야별 α): α·임베딩 + (1-α)·BM25
         a = self.alpha
         combined = [(did, a * emb_scores.get(did, 0.0) + (1 - a) * bm_scores.get(did, 0.0))
                     for did in set(emb_scores) | set(bm_scores)]
@@ -269,7 +262,6 @@ def _score(rag: DomainRAG, items: list[dict], k: int = 3):
 
 
 def _eval_domain(domain: str):
-    import json
     path = os.path.join(_REPO, "evals", f"{domain}.jsonl")
     if not os.path.exists(path):
         print(f"[{domain}] 평가셋 없음 — 건너뜀")
@@ -277,7 +269,7 @@ def _eval_domain(domain: str):
     items = [json.loads(line) for line in open(path, encoding="utf-8") if line.strip()]
     rag = DomainRAG(domain=domain)
     if not rag.is_real:
-        print(f"[{domain}] 컬렉션 미적재(0건) — 팀원 silver 대기. 건너뜀")
+        print(f"[{domain}] 컬렉션 미적재(0건) — 건너뜀 (chromadb·데이터 필요)")
         return
     h, m, ranks = _score(rag, items)
     print(f"\n[{domain}] n={len(items)}  hybrid={rag.has_bm25}  α={rag.alpha}")
@@ -285,7 +277,6 @@ def _eval_domain(domain: str):
     miss = [f"Q{i+1}" for i, r in enumerate(ranks) if not r]
     if miss:
         print(f"  miss: {', '.join(miss)}")
-    # α 스윕
     print("  α 스윕:", end=" ")
     for a in (0.8, 0.7, 0.6, 0.5, 0.4):
         rag.alpha = a
