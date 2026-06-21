@@ -21,6 +21,24 @@ from common.cost import MODEL_TIERS, tracker
 _client = None  # bedrock-runtime 클라이언트 싱글톤 (임포트 시 AWS 의존 안 하도록 지연 생성)
 
 
+def _traced(fn):
+    """모든 Bedrock 호출을 LangSmith LLM 트레이스로 감싼다.
+
+    ★ 왜 명시적 래핑인가 ★: 이 프로젝트는 LangChain LLM 래퍼가 아니라 raw Bedrock
+    (boto3 invoke_model)을 쓴다 → LangSmith 자동추적이 안 잡힌다. call_bedrock 하나만
+    감싸면 모든 호출(classify/answer/verify/draft, 재시도 포함)이 트레이스에 잡히고,
+    LangGraph 노드 실행(tracing on 시 자동) 아래로 자연히 nesting된다.
+
+    안전장치: langsmith 미설치면 원함수 그대로(무비용). 설치돼 있어도
+    LANGCHAIN_TRACING_V2=true + LANGSMITH_API_KEY일 때만 실제 전송된다(off면 거의 무비용).
+    """
+    try:
+        from langsmith import traceable
+    except Exception:
+        return fn
+    return traceable(run_type="llm", name="bedrock_call")(fn)
+
+
 def _get_client():
     global _client
     if _client is None:
@@ -31,6 +49,7 @@ def _get_client():
     return _client
 
 
+@_traced
 def call_bedrock(prompt: str, task: str = "answer", max_tokens: int = 1024) -> str:
     """Bedrock Claude 호출(boto3 invoke_model). task에 따라 모델 티어 자동 선택.
     task: classify(분류, Haiku급) / verify(검증) / answer(답변, Sonnet급) / draft(초안)
