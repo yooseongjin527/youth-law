@@ -30,6 +30,21 @@ app.mount("/static", StaticFiles(directory=_HERE / "static"), name="static")
 templates = Jinja2Templates(directory=_HERE / "templates")
 
 
+@app.on_event("startup")
+def _warm_embedding_model() -> None:
+    """부팅 시 임베딩 모델(ko-sroberta)을 백그라운드로 미리 로드.
+    최초 1회 로딩(~수초~십수초)을 첫 사용자 요청에서 떼어내, 첫 상담 지연을 없앤다.
+    서버 부팅·/health 응답은 막지 않도록 데몬 스레드에서 로드한다.
+    """
+    import threading
+
+    def _load() -> None:
+        from common.rag import _get_model
+        _get_model()
+
+    threading.Thread(target=_load, daemon=True).start()
+
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     """메인 화면 (Jinja). 질문 입력 → JS가 /api/consult 호출 → 카드 렌더링."""

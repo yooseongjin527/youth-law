@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 
 class ConsultRequest(BaseModel):
-    question: str = Field(min_length=2, max_length=500, description="평어 법률 질문")
+    question: str = Field(min_length=2, max_length=500, description="이용자의 생활법률 질문")
 
 
 class DomainTag(BaseModel):
