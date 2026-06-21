@@ -28,12 +28,19 @@ st.set_page_config(page_title="청년 법률상담 — 운영 대시보드", pag
 
 @st.cache_data(ttl=30)
 def _load(table: str) -> pd.DataFrame:
-    """RDS 테이블을 DataFrame으로. 엔진 없거나 실패하면 빈 DF."""
+    """RDS 테이블을 DataFrame으로. 엔진 없거나 실패하면 빈 DF.
+
+    pandas.read_sql(engine)는 pandas 3.0 + SQLAlchemy 조합에서 엔진을 DBAPI로
+    오인해 깨진다('Engine' has no attribute 'cursor') → SQLAlchemy로 직접 fetch.
+    """
     engine = db.get_engine()
     if engine is None:
         return pd.DataFrame()
     try:
-        return pd.read_sql(f"select * from {table}", engine)
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            result = conn.execute(text(f"select * from {table}"))
+            return pd.DataFrame(result.fetchall(), columns=list(result.keys()))
     except Exception:
         return pd.DataFrame()
 
