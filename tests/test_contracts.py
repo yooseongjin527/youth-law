@@ -108,7 +108,8 @@ def test_verifier_passes_grounded(monkeypatch):
     r = v.verifier_agent(state)
     assert len(r["verified_answers"]) == 1
     assert r["verification_report"][0]["dropped"] is False
-    assert r["verified_answers"][0]["answer"] == "임금은 매월 1회 이상 지급해야 합니다."  # 변형 없음
+    # 변형 없음
+    assert r["verified_answers"][0]["answer"] == "임금은 매월 1회 이상 지급해야 합니다."
 
 
 def test_verifier_removes_hallucinated_sentence(monkeypatch):
@@ -176,7 +177,8 @@ def test_cost_tracker():
 
 def test_eval_retrieval_runs():
     """평가 축: hit@k 측정이 평가셋으로 실행됨 (stub이라 값은 낮아도 OK)."""
-    import sys; sys.path.insert(0, ".")
+    import sys
+    sys.path.insert(0, ".")
     from scripts.evaluate import eval_retrieval
     r = eval_retrieval("labor")
     assert r["n"] >= 3                  # 평가셋 존재
@@ -185,7 +187,8 @@ def test_eval_retrieval_runs():
 
 def test_eval_grounding_runs():
     """환각 축: grounding rate 측정이 실행됨."""
-    import sys; sys.path.insert(0, ".")
+    import sys
+    sys.path.insert(0, ".")
     from scripts.evaluate import eval_grounding
     r = eval_grounding("labor")
     assert r["n"] >= 3
@@ -264,6 +267,7 @@ def test_silver_chunking_항본문_누락방지():
 def test_api_consult():
     """웹서비스: /api/consult 가 분류·카드·검증리포트를 반환."""
     from fastapi.testclient import TestClient
+
     from app.api import app as fastapi_app
     client = TestClient(fastapi_app)
     r = client.post("/api/consult", json={"question": "보증금을 안 돌려줘요"})
@@ -277,6 +281,7 @@ def test_api_consult():
 def test_api_draft():
     """웹서비스: /api/draft 가 '초안' 경고 포함 문서를 반환."""
     from fastapi.testclient import TestClient
+
     from app.api import app as fastapi_app
     client = TestClient(fastapi_app)
     r = client.post("/api/draft", json={"question": "월급을 못 받았어요", "domain": "labor"})
@@ -287,6 +292,7 @@ def test_api_draft():
 def test_api_index_page():
     """웹서비스: 메인 화면(Jinja)이 렌더링됨."""
     from fastapi.testclient import TestClient
+
     from app.api import app as fastapi_app
     client = TestClient(fastapi_app)
     r = client.get("/")

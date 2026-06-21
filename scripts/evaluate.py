@@ -170,7 +170,10 @@ def run(domain: str, split: str = "smoke") -> dict:
     # 이력 누적 → 개선 추이 (Day2 vs Day5 비교가 발표 자료)
     out_dir = _EVAL_DIR / "results"
     out_dir.mkdir(exist_ok=True)
-    history_name = f"{domain}_history.jsonl" if split == "smoke" else f"{domain}_{split}_history.jsonl"
+    history_name = (
+        f"{domain}_history.jsonl" if split == "smoke"
+        else f"{domain}_{split}_history.jsonl"
+    )
     with open(out_dir / history_name, "a") as f:
         f.write(json.dumps(result, ensure_ascii=False) + "\n")
     return result
