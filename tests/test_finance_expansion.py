@@ -4,13 +4,13 @@
 Q4(제7조 이의제기)·Q5(제13조의3 전화번호 이용중지)에 피해자용 '피해구제 신청/지급정지'
 노이즈를 주던 문제를 박제한다.
 
-확장 로직은 finance.py 자체 사전에서 common/rag_hybrid + common/synonyms/finance.jsonl로
-이전됐다(이중 확장 방지). 그래서 확장이 실제 사는 rag_hybrid._expand_query를 직접 검증한다.
+확장 로직은 finance.py 자체 사전에서 common/rag + common/synonyms/finance.jsonl로
+이전됐다(이중 확장 방지). 그래서 확장이 실제 사는 rag._expand_query를 직접 검증한다.
 _expand_query는 순수 문자열 함수라 chromadb·임베딩 없이 로컬에서 검증 가능.
 (라이브 hit@k는 EC2에서 scripts/evaluate.py finance로 측정)
 질문 문자열은 evals/finance.jsonl 원문 그대로.
 """
-from common.rag_hybrid import _expand_query
+from common.rag import _expand_query
 
 Q1 = "보이스피싱으로 돈을 보냈는데 돌려받을 수 있나요"           # 피해자 송금→환급 (제3·4조)
 # 명의인(통장 명의자) 이의제기 방향 (제7조)

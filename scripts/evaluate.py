@@ -59,15 +59,8 @@ _EVAL_DIR = Path(__file__).resolve().parent.parent / "evals"
 
 
 def _load_rag_class():
-    """Select the retrieval backend for evaluation.
-
-    Default stays common.rag so historical hit@3 remains comparable.
-    Set EVALUATE_RAG=hybrid to evaluate common.rag_hybrid without changing agents.
-    """
-    if os.getenv("EVALUATE_RAG", "").lower() == "hybrid":
-        from common.rag_hybrid import DomainRAG
-    else:
-        from common.rag import DomainRAG
+    """Retrieval backend for evaluation — common.rag (하이브리드 승격 완료, 4분야 공통)."""
+    from common.rag import DomainRAG
     return DomainRAG
 
 

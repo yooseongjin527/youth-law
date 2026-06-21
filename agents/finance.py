@@ -10,9 +10,9 @@ labor.py와 동일 패턴 — 자기 분야 코퍼스(컬렉션)만 다름.
   2) 폴백(추출) 모드: llm.py 미구현·호출 실패 시. 검색 조문을 '그대로' 안내문으로
      조립한다 — 생성 자체가 없어 환각 0, 그래프·CI가 항상 동작.
 
-★ 검색기 ★: common/rag_hybrid 의 DomainRAG(BM25+임베딩 하이브리드, 분야별 α·쿼리확장).
-  common/rag.py 와 동일 인터페이스라 drop-in(labor.py와 같은 패턴). 평어→법률용어 쿼리확장은
-  common/synonyms/finance.jsonl + rag_hybrid.search 내부에서 수행한다 — finance.py 자체 확장은
+★ 검색기 ★: common/rag 의 DomainRAG(BM25+임베딩 하이브리드, 분야별 α·쿼리확장).
+  4분야 공통 엔진(하이브리드 승격 완료). 평어→법률용어 쿼리확장은
+  common/synonyms/finance.jsonl + rag.search 내부에서 수행한다 — finance.py 자체 확장은
   제거(이중 확장 방지). (synonyms/finance.jsonl 기준 hit@3 0.52→1.0)
 
 ────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ from common.base_agent_answer import (
     safe_search,
 )
 from common.drafter import make_draft
-from common.rag_hybrid import DomainRAG, RetrievedChunk
+from common.rag import DomainRAG, RetrievedChunk
 from state import LegalState
 
 _rag = DomainRAG(domain="finance", corpus_path="data/finance")
@@ -87,8 +87,8 @@ def _llm_answer(query: str, chunks: list[RetrievedChunk]) -> tuple[str, float] |
 
 def finance_agent(state: LegalState) -> dict:
     query = state["user_query"]
-    # 검색기는 common/rag_hybrid(BM25+임베딩 하이브리드). 평어→법률용어 쿼리확장은
-    # rag_hybrid.search 내부(synonyms/finance.jsonl)에서 수행 — 여기선 원질의만 넘긴다
+    # 검색기는 common/rag(BM25+임베딩 하이브리드). 평어→법률용어 쿼리확장은
+    # rag.search 내부(synonyms/finance.jsonl)에서 수행 — 여기선 원질의만 넘긴다
     # (이중 확장 방지). 확장은 검색 입력에만 영향, 답변·인용은 원문 기준.
     chunks = safe_search(_rag, query, k=3)
 
