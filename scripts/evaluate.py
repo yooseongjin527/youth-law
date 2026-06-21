@@ -35,6 +35,7 @@ from agents.housing import housing_agent  # noqa: E402
 from agents.labor import labor_agent  # noqa: E402
 from agents.verifier import verifier_agent  # noqa: E402
 from common.cost import tracker  # noqa: E402
+from common.logging_store import save_eval_scorecard  # noqa: E402
 from common.rag import DomainRAG  # noqa: E402
 from state import DOMAINS  # noqa: E402
 
@@ -173,6 +174,7 @@ def run(domain: str, split: str = "smoke") -> dict:
     history_name = f"{domain}_history.jsonl" if split == "smoke" else f"{domain}_{split}_history.jsonl"
     with open(out_dir / history_name, "a") as f:
         f.write(json.dumps(result, ensure_ascii=False) + "\n")
+    save_eval_scorecard(result)  # RDS 로깅(꺼져 있으면 no-op)
     return result
 
 
