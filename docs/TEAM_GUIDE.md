@@ -36,7 +36,7 @@
    ```bash
    pip install -r requirements.txt
    python graph.py        # 3케이스 출력 확인
-   python -m pytest tests/  # 21 passed 확인
+   python -m pytest tests/  # 현재 50 tests 통과 확인
    ```
    "내 환경에서 안 돌아요"를 Day1에 발견하면 늦다.
 
