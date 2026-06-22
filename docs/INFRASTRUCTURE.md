@@ -199,6 +199,26 @@ sudo certbot renew --dry-run        # 자동갱신 시뮬레이션 성공
 배포는 **dev fast-forward → 의존성 동기화 → DB 스키마 확인 → systemd 재시작 → 외부 검증** 순서로 한다.
 작업 전 EC2의 로컬 변경이 있으면 중단하고 원인을 확인한다.
 
+#### 실서버 재현성 검증 기준
+
+외부 URL의 `/health`만 통과해도 Nginx/FastAPI는 살아 있는 것이지만, **실서버 재현성**을
+증명하려면 EC2 SSH 세션에서 아래 항목을 한 번에 관통해야 한다. 이 체크가 통과해야
+문서화한 런북이 실제 서버 상태와 맞는다고 볼 수 있다.
+
+| 단계 | 명령/확인 | 통과 기준 |
+|---|---|---|
+| 코드 동기화 | `git status --short --branch`, `git merge --ff-only origin/dev` | 로컬 변경 없음, dev fast-forward 성공 |
+| EC2 의존성 | `pip install -r requirements-ec2.txt` | `psycopg[binary]`, `sentence-transformers`, `rank-bm25`, `kiwipiepy` 설치 충돌 없음 |
+| RDS 스키마 | `python scripts/init_db.py` | `consultation_logs`, `llm_usage_logs`, `eval_scorecards` 생성/확인 완료 |
+| pgvector 실검색 | `RAG_BACKEND=pgvector python scripts/check_rag.py finance` | `실모드: True`, 조문수 > 0, 검색 결과가 stub 아님 |
+| systemd | `sudo systemctl restart ...`, `status --no-pager` | `youth-law-api`, `youth-law-dashboard` 둘 다 active |
+| 외부 API | `/health`, 대표 `/api/consult`, `scripts/e2e_smoke.py --base-url ...` | health ok, 상담 응답에 domains/answer_blocks/citations 존재, 4케이스 PASS |
+| RDS 로그 | `consultation_logs order by id desc limit 5` | 방금 호출한 대표 상담 질문과 domains가 저장됨 |
+
+로컬 노트북에서 확인할 수 있는 것은 외부 API 스모크까지다. `requirements-ec2.txt`,
+`init_db.py`, `RAG_BACKEND=pgvector`, RDS 로그 조회는 RDS 보안그룹과 EC2 `.env`에
+의존하므로 EC2 내부에서 직접 확인한다.
+
 ```bash
 cd /home/ubuntu/youth_law
 git status --short --branch
@@ -208,7 +228,14 @@ git merge --ff-only origin/dev
 source .venv/bin/activate
 pip install -r requirements-ec2.txt
 
-# RDS 로깅 테이블 멱등 생성/확인. DATABASE_URL이 없는 환경이면 건너뛴다.
+# RDS 로깅 테이블 멱등 생성/확인. EC2 .env에는 DATABASE_URL이 있어야 한다.
+python scripts/init_db.py
+```
+
+로컬 또는 임시 환경에서 같은 절차를 미리 읽어볼 때만 DATABASE_URL이 없으면 건너뛰는
+래퍼를 사용한다.
+
+```bash
 python - <<'PY'
 import os
 from dotenv import load_dotenv
@@ -219,7 +246,11 @@ if not os.getenv("DATABASE_URL"):
 from scripts.init_db import main
 main()
 PY
+```
 
+EC2에서는 이어서 서비스를 재시작한다.
+
+```bash
 sudo systemctl restart youth-law-api youth-law-dashboard
 sudo systemctl status youth-law-api --no-pager
 sudo systemctl status youth-law-dashboard --no-pager
