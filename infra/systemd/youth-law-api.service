@@ -1,0 +1,14 @@
+[Unit]
+Description=Youth Law FastAPI
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/youth_law
+Environment=PYTHONPATH=/home/ubuntu/youth_law
+ExecStart=/home/ubuntu/youth_law/.venv/bin/uvicorn app.api:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
