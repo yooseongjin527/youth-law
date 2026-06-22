@@ -188,7 +188,12 @@ class DomainRAG:
             return False
         try:
             from sqlalchemy import create_engine, text
-            engine = create_engine(db_url, pool_pre_ping=True)
+            # ★ connect_timeout 필수 ★: 없으면 도달 불가 DB에서 engine.connect()가
+            # 무한 대기한다(예외가 안 나서 아래 except가 못 잡음) → 앱 import가 통째로 행.
+            # 5초 내 실패시키면 except가 잡아 False 반환 → stub 폴백(docstring 약속대로).
+            engine = create_engine(
+                db_url, pool_pre_ping=True, connect_args={"connect_timeout": 5}
+            )
             with engine.connect() as conn:
                 n = conn.execute(
                     text("select count(*) from law_chunks where domain = :d"),
