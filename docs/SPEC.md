@@ -75,8 +75,9 @@ labor housing consumer finance  │
 | finance | D | 채무자회생법(개인회생·파산), 통신사기피해환급법(보이스피싱), 채권추심법·대부업법 |
 
 ## 6. 웹서비스 계약 (app/)
-- POST /api/consult {question} → {domains, in_scope, final_answer, answer_blocks, verification_report}
+- POST /api/consult {question, session_id?} → {domains, in_scope, final_answer, answer_blocks, verification_report}
 - POST /api/draft {question, domain} → DocumentDraft
+- DELETE /api/session/{session_id} → {cleared}
 - UI(웹·Streamlit)는 answer_blocks 만 렌더링 — State 내부 구조에 직접 의존 금지 (service.py 경유)
 
 ## 7. 동결: Day 1 종료 시 §2·§3 freeze.

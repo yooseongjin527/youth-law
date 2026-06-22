@@ -11,7 +11,7 @@ from agents.finance import finance_draft
 from agents.housing import housing_draft
 from agents.labor import labor_draft
 from app.contextualize import contextualize
-from app.session_store import append_turn, get_history
+from app.session_store import append_turn, clear, get_history
 from common.logging_store import save_consultation
 from graph import build_graph
 from state import DOMAIN_KR
@@ -70,3 +70,9 @@ def make_draft(question: str, domain: str) -> dict:
     if domain not in _DRAFTERS:
         raise ValueError(f"지원하지 않는 분야: {domain}")
     return _DRAFTERS[domain](init_state(question))
+
+
+def clear_session(session_id: Optional[str]) -> dict:
+    """멀티턴 메모리 세션을 명시적으로 비운다."""
+    clear(session_id)
+    return {"cleared": bool(session_id)}

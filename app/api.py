@@ -4,6 +4,7 @@
 화면:  GET /            → Jinja 메인 페이지 (질문 폼 + 결과 카드, JS fetch)
 API:   POST /api/consult → 상담 (분류·답변·근거·연락처)
        POST /api/draft   → 문서 초안 생성
+       DELETE /api/session/{session_id} → 멀티턴 세션 리셋
        GET  /health      → 헬스체크 (배포·모니터링용)
 문서:  GET /docs         → Swagger UI 자동 생성
 
@@ -59,6 +60,11 @@ def consult(req: ConsultRequest):
 @app.post("/api/draft", response_model=DraftResponse)
 def draft(req: DraftRequest):
     return service.make_draft(req.question, req.domain)
+
+
+@app.delete("/api/session/{session_id}")
+def clear_session(session_id: str):
+    return service.clear_session(session_id)
 
 
 @app.get("/health")

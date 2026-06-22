@@ -234,6 +234,13 @@ curl -fsS https://youthlaw-demo.duckdns.org/api/consult \
   -d '{"question":"전세 보증금을 안 돌려줘요"}'
 ```
 
+데모 직전에는 고정 E2E 스모크로 핵심 4케이스(단일 분야/복수 분야/범위 밖/초안)를
+한 번에 확인한다.
+
+```bash
+python scripts/e2e_smoke.py --base-url https://youthlaw-demo.duckdns.org
+```
+
 pgvector 실검색 배포라면 RAG 백엔드도 직접 확인한다.
 
 ```bash

@@ -109,5 +109,5 @@
 - [x] ~~서버~~ → **FastAPI 구현됨** (api.py: /api/consult·/api/draft·Jinja 메인화면·/docs)
 - [ ] Day4: 실데이터로 UI 동작 확인 (`uvicorn app.api:app` / `streamlit run app/ui_streamlit.py` / `streamlit run app/ui_dashboard.py`)
 - [ ] Day6: 화면 다듬기 — style.css·문구·로딩 표시 + LangGraph .stream()으로 진행상황 표시(선택)
-- [ ] Day6: 데모 시나리오 4개 리허설 (단일/복수/범위밖/초안)
+- [x] ~~Day6: 데모 시나리오 4개 리허설~~ → `scripts/e2e_smoke.py`로 단일/복수/범위밖/초안 스모크 고정
 - [ ] Day6: 데모 시나리오 준비 (단일/복수/범위밖/문서초안 4케이스) + 발표자료
