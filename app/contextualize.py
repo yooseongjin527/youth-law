@@ -4,11 +4,10 @@
 기존 그래프에 그대로 투입한다 → graph/state/agents 무변경. supervisor가 재작성된
 독립형 질문을 자연스럽게 (재)분류하므로 분야 전환도 그대로 처리된다.
 
-★ 마커 가드 ★: 참조 표지(그거/그건/그럼…)가 있을 때만 재작성한다. 없으면 원문
-그대로 통과 → 단발 질문 경로는 기존과 100% 동일(회귀 위험 0, LLM 호출 0).
-보수적으로: 못 잡은 후속은 '맥락 없는 단발'처럼 동작(우아한 저하)뿐이지만, 멀쩡한
-독립 질문을 잘못 재작성하면 답이 틀어진다 → 표지는 좁게 잡는다.
+★ 후속 질문 가드 ★: 참조 표지 또는 직전 답변의 용어를 묻는 설명형 질문일
+때만 재작성한다. 없으면 원문 그대로 통과 → 단발 질문 경로 회귀를 줄인다.
 """
+import re
 
 # 직전 맥락을 가리키는 지시 표지. 이게 없으면 후속이 아니라 독립 질문으로 본다.
 # (broad한 '그'·'더'·'또' 등은 일반 질문에서도 흔해 오작동 → 의도적으로 제외)
@@ -17,6 +16,17 @@ _REF_MARKERS = (
     "그때", "그땐", "이거", "이건", "저거", "거기", "그곳", "방금",
     "아까", "위에", "해당", "그분", "그쪽", "그것", "이것",
 )
+
+_FOLLOWUP_PATTERNS = tuple(re.compile(p) for p in (
+    r".+(이|가|은|는)\s*[뭐머]([냐야죠지]|인가요|예요|에요|죠|지)?\??$",
+    r".*(무슨|어떤)\s+(뜻|의미|행위|내용|말|요건|경우).*",
+    (
+        r".*(뜻|의미|요건|범위|차이|예시|사례).*?"
+        r"(알려|설명|궁금|들어|뭐|무엇|머).*"
+    ),
+    r".*(더|좀|자세히|쉽게|구체적으로).*?(설명|알려|말해|풀어).*",
+    r".*(예시|사례).*?(들어|알려|설명).*",
+))
 
 _REWRITE_PROMPT = """아래는 청년 생활법률 상담 대화의 직전 맥락입니다.
 
@@ -28,14 +38,20 @@ _REWRITE_PROMPT = """아래는 청년 생활법률 상담 대화의 직전 맥�
 
 이 후속 질문을 '직전 대화를 모르는 사람도 이해할 수 있는 완전한 질문'으로
 한국어로 다시 쓰세요.
-- 지시어(그거/그건/그럼 등)를 직전 대화의 구체적 대상으로 치환
+- 지시어(그거/그건/그럼 등)나 설명 대상 용어를 직전 대화의 구체적 대상으로 치환
+- "불공정한 행위가 뭐야?"처럼 직전 답변의 용어 설명을 묻는 경우,
+  관련 법령·조문·분야가 드러나게 재작성
 - 질문의 의도·분야를 절대 바꾸지 말 것 (없는 내용 추가 금지)
 - 후속 질문이 이미 독립적이면 거의 그대로 두세요
 JSON으로만 답하세요: {{"standalone": "..."}}"""
 
 
 def _has_reference_marker(query: str) -> bool:
-    return any(m in query for m in _REF_MARKERS)
+    normalized = " ".join(query.split())
+    return (
+        any(m in normalized for m in _REF_MARKERS)
+        or any(p.search(normalized) for p in _FOLLOWUP_PATTERNS)
+    )
 
 
 def _format_history(history: list[dict], max_turns: int = 2) -> str:
@@ -43,7 +59,7 @@ def _format_history(history: list[dict], max_turns: int = 2) -> str:
     lines: list[str] = []
     for t in history[-max_turns:]:
         q = (t.get("question") or "").strip()
-        a = " ".join((t.get("answer") or "").split())[:200]
+        a = " ".join((t.get("answer") or "").split())[:700]
         lines.append(f"Q: {q}")
         lines.append(f"A: {a}")
     return "\n".join(lines)
