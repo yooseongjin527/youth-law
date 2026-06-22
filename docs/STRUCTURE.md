@@ -12,7 +12,7 @@ youth_law/
 │
 ├── agents/                # 에이전트 노드들
 │   ├── __init__.py        #  패키지 표시(빈 파일) — import 가능하게
-│   ├── consumer.py        #  [담당 C] 소비자
+│   ├── consumer.py        #  [담당 C] 소비자 — 전자상거래·방문판매·할부 3법 + 법 라우팅(_route_law)
 │   ├── finance.py         #  [담당 D] 금융·채무
 │   ├── housing.py         #  [담당 B] 주택
 │   ├── labor.py           #  [담당 A] 노동 — RAG 답변 + 문서초안
@@ -27,9 +27,12 @@ youth_law/
 │   │   ├── base.html      #   공통 레이아웃 (헤더·푸터·면책)
 │   │   └── index.html     #   메인 화면 — 질문 폼 + 결과 카드 (JS fetch)
 │   ├── __init__.py        #  패키지 표시(빈 파일)
-│   ├── api.py             #  FastAPI 서버 — /api/consult·/api/draft·메인페이지·/docs
+│   ├── api.py             #  FastAPI 서버 — /api/consult·/api/draft·/api/session·메인페이지·/docs
+│   ├── contextualize.py   #  멀티턴: 후속 질문 → 독립형 질문 재작성(그래프·State 무변경)
 │   ├── schemas.py         #  Pydantic 요청/응답 모델 (SPEC 대응)
 │   ├── service.py         #  ★공유 로직★ 그래프 싱글톤 + consult()/draft() — API·Streamlit 공용
+│   ├── session_store.py   #  멀티턴 세션 저장소(메모리, TTL·N턴 바운드)
+│   ├── ui_dashboard.py    #  운영 대시보드(Streamlit) — 개요·비용·품질·실행성능·상담로그
 │   └── ui_streamlit.py    #  Streamlit 데모 UI (카드+펼침+초안, 발표용)
 │
 ├── airflow/dags/
@@ -37,11 +40,15 @@ youth_law/
 │
 ├── common/                # 공용 헬퍼 (4명이 공유, 변경은 PR+전원합의)
 │   ├── __init__.py        #  패키지 표시(빈 파일)
+│   ├── base_agent_answer.py #  분야 에이전트 공통 베이스(검색·폴백·DomainAnswer 조립 불변식)
 │   ├── contacts.py        #  검증된 공식 연락처 (LLM 생성 금지, 환각 0)
 │   ├── cost.py            #  모델 티어링 + 토큰·비용 추적
+│   ├── db.py              #  RDS 엔진/로깅 토글 (DATABASE_URL·ENABLE_RDS_LOGGING)
 │   ├── drafter.py         #  내용증명·진정서 초안 생성
-│   ├── llm.py             #  Bedrock 호출 + 구조화 출력 강제 + 사용량 기록
-│   └── rag.py             #  검색 엔진(Chroma 실구현, 미설치 시 stub 폴백) + Day5 고도화
+│   ├── llm.py             #  Bedrock 호출 + 구조화 출력 강제 + 사용량 기록 + LangSmith 트레이스
+│   ├── logging_store.py   #  상담·비용·평가 로그를 RDS에 적재 (꺼져 있으면 no-op)
+│   ├── rag.py             #  검색 엔진(chroma/pgvector/stub 백엔드) + 분야별 하이브리드 게이트
+│   └── synonyms/          #  분야별 쿼리확장 사전(jsonl) — 하이브리드 분야에서만 사용
 │
 ├── data/                  # (런타임 생성, 깃 제외) bronze/silver·chroma 벡터DB·manifest.json
 │
@@ -72,7 +79,7 @@ youth_law/
 │   ├── bronze.py          #  [Bronze] 법령 API 수집 → 원본 XML 저장
 │   ├── config.py          #  ★동적 내용★ 분야별 법령 목록 LAW_LIST (팀이 채움)
 │   ├── detect.py          #  증분 감지 — manifest 시행일 비교, 변경분만 갱신
-│   ├── gold.py            #  [Gold] 임베딩 → Chroma 컬렉션 upsert
+│   ├── gold.py            #  [Gold] 임베딩 → Chroma 컬렉션 / RDS pgvector 적재 (env RAG_BACKEND)
 │   └── silver.py          #  [Silver] 조문 단위 청킹 + 메타데이터(시행일·출처)
 │
 ├── scripts/               # 실행 스크립트
