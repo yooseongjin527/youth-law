@@ -25,7 +25,7 @@ _DISCLAIMER = (
 )
 
 
-_SNIPPET_MAX = 120  # 근거 조문 표시 길이 — 조문 전문 도배 방지(원문은 source_url로)
+_SNIPPET_MAX = 300  # 근거 조문 표시 길이 — 조문 전문 도배 방지(원문은 source_url로)
 
 
 def _truncate(text: str, n: int = _SNIPPET_MAX) -> str:
