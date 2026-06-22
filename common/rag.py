@@ -4,14 +4,16 @@
 → 분야마다 별도 벡터DB 컬렉션(law_labor 등). 4명이 각자 자기 컬렉션을 독립 구축.
 검색 '기법'은 여기 하나로 통일(고도화도 여기서만) → 4분야 자동 적용.
 
-★ 하이브리드 검색 엔진 (BM25 + 임베딩) — 승격 완료 ★
-이전엔 임베딩-only였고 하이브리드 로직은 common/rag_hybrid.py에 '승격 대기'로 분리돼
-labor/finance에만 물려 있었다. 이 파일로 승격하면서 4분야(labor/housing/consumer/finance)가
-같은 하이브리드 인터페이스를 쓴다 → housing/consumer도 BM25·쿼리확장(synonyms)이 런타임에 작동.
+★ 검색 엔진 승격 완료 — 분야별 검색기법 게이트 ★
+하이브리드 로직은 common/rag_hybrid.py에 '승격 대기'로 분리돼 있던 것을 이 파일로 흡수했다.
+단, 4분야를 일괄 하이브리드로 바꾸지 않고 분야별로 검색기법을 고른다(_HYBRID_DOMAINS):
+  · finance·labor      → 하이브리드(BM25+임베딩) + 분야별 α·쿼리확장 (담당이 합의·튜닝한 분야)
+  · housing·consumer   → 기존 임베딩-only(쿼리확장·BM25 없음) — 동작 불변(미합의 분야 보존)
+새 기법을 쓰려면 _HYBRID_DOMAINS에 분야를 추가한다(해당 담당 합의 후).
 
-구성 (브리프 §6 절충안):
-  · 검색 로직 = BM25(kiwipiepy)+임베딩 가중결합, 분야별 α, 정의의도 공통처리
-  · 쿼리확장 = common/synonyms/<domain>.jsonl 분리 로드/캐싱, substring 매칭
+구성:
+  · 하이브리드   = BM25(kiwipiepy)+임베딩 가중결합, 분야별 α, 정의의도 공통처리, synonyms 쿼리확장
+  · 임베딩-only  = 질의 임베딩 → Chroma 최근접(확장 없음). housing/consumer 승격 전 동작 그대로
   · 폴백: 라이브러리(chromadb/rank_bm25)·컬렉션 없으면 임베딩-only → stub 으로 단계적 폴백
           → 그래프·CI가 항상 동작. 인덱싱은 pipeline/gold.py 가 담당.
   (보류) cross-encoder 리랭킹 → 한국어 법령서 성능저하 확인되어 v2로
@@ -40,7 +42,12 @@ from typing import TypedDict  # noqa: E402
 
 from pipeline.config import CHROMA_DIR, EMBED_MODEL  # noqa: E402
 
-# ── 분야별 튜닝 노브 ────────────────────────────────────────────────
+# ── 분야별 검색기법 게이트 ──────────────────────────────────────────
+# 하이브리드(BM25+임베딩+쿼리확장)를 적용할 분야. 나머지(housing/consumer)는 임베딩-only
+# (rag.py 승격 전 동작 그대로). 분야 담당이 합의·튜닝하면 여기에 추가한다.
+_HYBRID_DOMAINS = {"finance", "labor"}
+
+# ── 분야별 튜닝 노브 (하이브리드 분야에서만 사용) ─────────────────────
 _DEFAULT_ALPHA = 0.7
 # α=1.0 = 임베딩만, α↓일수록 BM25 비중↑. 분야별 스윕으로 '비퇴화' 확정(현 평가셋 기준).
 # ★ 교훈: synonyms가 비면 BM25가 평어 토큰을 노이즈로 매칭 → 임베딩만 못함.
@@ -134,9 +141,11 @@ def _tokenize_ko(text: str) -> list[str]:
 
 
 class DomainRAG:
-    """한 분야 컬렉션(law_{domain}) 검색기 — 하이브리드 + 분야별 확장/α.
+    """한 분야 컬렉션(law_{domain}) 검색기.
 
-    공개 인터페이스(domain, is_real, search)는 임베딩-only 시절과 동일 → drop-in."""
+    검색기법은 분야별로 갈린다(_HYBRID_DOMAINS):
+      finance·labor → 하이브리드(BM25+임베딩) + 쿼리확장 / housing·consumer → 임베딩-only.
+    공개 인터페이스(domain, is_real, search)는 동일 → 에이전트 코드 변경 없이 drop-in."""
 
     def __init__(self, domain: str, corpus_path: str | None = None):
         self.domain = domain
@@ -145,7 +154,9 @@ class DomainRAG:
         self.collection = None
         self._bm25 = None
         self._bm25_corpus_docs: list[dict] = []
-        # 분야별 α (env HYBRID_ALPHA가 있으면 스윕용으로 우선)
+        # 이 분야가 하이브리드(BM25+쿼리확장)를 쓰는가. 아니면 임베딩-only.
+        self.hybrid_enabled = domain in _HYBRID_DOMAINS
+        # 분야별 α (env HYBRID_ALPHA가 있으면 스윕용으로 우선) — 하이브리드 분야에서만 사용
         self.alpha = float(os.getenv("HYBRID_ALPHA", _ALPHA_BY_DOMAIN.get(domain, _DEFAULT_ALPHA)))
         try:  # 실제 백엔드 연결 시도 — 실패 시 stub 폴백
             import chromadb
@@ -153,7 +164,8 @@ class DomainRAG:
             col = client.get_or_create_collection(self.collection_name)
             if col.count() > 0:               # 데이터가 있어야 실모드
                 self.collection = col
-                self._build_bm25_index()      # Chroma 데이터로 BM25 인덱스 구축
+                if self.hybrid_enabled:       # 하이브리드 분야만 BM25 인덱스 구축
+                    self._build_bm25_index()  # Chroma 데이터로 BM25 인덱스 구축
         except Exception:
             self.collection = None            # 폴백 (라이브러리 없음/미적재)
 
@@ -183,10 +195,14 @@ class DomainRAG:
         ]
 
     def search(self, query: str, k: int = 3) -> list[RetrievedChunk]:
-        """질의 → (분야별 확장) → 하이브리드/임베딩 검색 top-k."""
+        """질의 → 분야별 검색기법 → top-k.
+        finance·labor: 쿼리확장 + 하이브리드(BM25 없으면 확장-임베딩).
+        housing·consumer: 임베딩-only(확장 없음) — 승격 전 동작 그대로."""
         if not self.is_real:
             return self._search_stub(k)
-        eq = _expand_query(self.domain, query)   # ★검색 입력만 확장
+        if not self.hybrid_enabled:              # housing/consumer: 기존 임베딩-only
+            return self._search_embedding_only(query, k)
+        eq = _expand_query(self.domain, query)   # ★finance/labor만 확장 (검색 입력만)
         if self.has_bm25:
             return self._search_hybrid(eq, k)
         return self._search_embedding_only(eq, k)
