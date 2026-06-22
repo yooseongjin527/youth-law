@@ -13,7 +13,7 @@ python -m venv .venv ; .\.venv\Scripts\Activate.ps1
 
 # 의존성
 pip install -r requirements.txt
-pip install chromadb sentence-transformers   # 무거워서 따로 (검색/빌드에 필요)
+pip install chromadb sentence-transformers rank-bm25 kiwipiepy   # 검색/빌드에 필요
 
 # 환경변수 — .env.example 복사 후 OC 키 채우기
 copy .env.example .env
@@ -70,7 +70,7 @@ python scripts/sync_data.py push corpus          # chroma + manifest 올림
 
 **(a) 계약 테스트**
 ```powershell
-$env:PYTHONUTF8=1 ; python -m pytest tests/ -q     # 21 passed 면 OK
+$env:PYTHONUTF8=1 ; python -m pytest tests/ -q     # 현재 50 tests 통과면 OK
 ```
 
 **(b) 실검색 동작 확인** (stub이 아니라 진짜 벡터검색인지)
@@ -94,7 +94,7 @@ copy CLAUDE.local.md.example CLAUDE.local.md
 
 **(b) 작업 브랜치** (규약: `<type>/<scope>-주제`)
 ```powershell
-git switch main ; git pull --rebase origin main
+git switch dev ; git pull --ff-only origin dev
 git switch -c feat/consumer-answer      # 예시 (자기 분야로)
 ```
 
@@ -126,5 +126,5 @@ git switch -c feat/consumer-answer      # 예시 (자기 분야로)
 
 ---
 
-> ⚠️ **현재 답변은 stub(가짜)입니다.** 검색(RAG)은 실제로 동작하지만, 실제 답변 생성(Bedrock)은
-> 모델 설정 후 Day3부터 붙입니다. 그 전까지는 "검색 결과를 어떻게 다룰지" 로직 위주로 작업하세요.
+> ⚠️ 로컬에 데이터/모델 의존성이 없으면 RAG는 stub 또는 추출 폴백으로 안전하게 동작합니다.
+> 실데이터 품질 확인은 `build_index.py`/`sync_data.py` 후 `scripts/evaluate.py`로 측정하세요.

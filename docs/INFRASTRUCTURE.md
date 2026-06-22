@@ -5,7 +5,7 @@
 >
 > 상세 절차/배경은 분리 문서 참조:
 > - 단계별 구축 가이드: [INFRA_IMPLEMENTATION_GUIDE.md](INFRA_IMPLEMENTATION_GUIDE.md)
-> - 운영 대시보드: [OPS_DASHBOARD_GUIDE.md](OPS_DASHBOARD_GUIDE.md)
+> - 운영 대시보드 구현: [`app/ui_dashboard.py`](../app/ui_dashboard.py)
 > - 프로비저닝: [../infra/PROVISIONING.md](../infra/PROVISIONING.md)
 > - Terraform: [../infra/terraform/README.md](../infra/terraform/README.md)
 

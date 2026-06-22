@@ -12,7 +12,7 @@
 ## 프로젝트 조건
 - 6일, 4명, AI 에이전트 부트캠프 final 프로젝트
 - 학습 목표: 4명이 각자 벡터DB 구축 + RAG를 직접 해보는 것
-- 스택: LangGraph + Bedrock Claude + 벡터DB(Chroma/OpenSearch) + Streamlit
+- 스택: LangGraph + Bedrock Claude + Chroma/pgvector RAG + FastAPI/Jinja + Streamlit dashboard
 - 협업: Claude Code 등으로 바이브 코딩, CLAUDE.md/SPEC.md로 계약 관리
 
 ## 도메인: 청년 생활법률 상담 (노동/주택/소비자/금융)
@@ -47,13 +47,14 @@
 - 근거 조문·검색 코퍼스: 국가법령정보센터 API — 현행 법령 + 시행일
 - ⚠️ Day0 전에 국가법령정보센터 OC 인증키 신청 (수동 승인 1~2일)
 
-## 아키텍처 (이미 골격 구현·검증됨)
+## 아키텍처 (현재 dev 기준)
 - Supervisor가 질문을 4분야로 자동 분류 (사용자는 분야 선택 안 함)
 - 1개 분야→전문가 1명 / 복수 분야→동시 실행(fan-out) / 범위 밖→정직하게 거절
 - 전문가들 → **Verifier(답변-근거 검증, 하네스 — HARNESS.md)** → Planner 종합 + 출처·연락처 카드
   검증 탈락 답변은 사용자 도달 경로가 구조적으로 없음. 전부 탈락 시 정직 거절.
 - 각 전문가는 자기 분야 별도 컬렉션(law_labor 등)으로 독립 RAG
-- 공통 검색 로직은 common/rag.py 하나로 통일 → 고도화 시 4분야 자동 적용
+- 공통 검색 인터페이스는 common/rag.py 하나로 통일. finance/labor는 하이브리드(BM25+임베딩+쿼리확장),
+  housing/consumer는 현재 임베딩-only 게이트로 운용
 
 ## UX 결정사항
 - 입력창 하나(분야 선택 체크박스 X). 자동 분류가 멀티에이전트의 핵심 기능이라 사용자에게 안 시킴
@@ -62,21 +63,20 @@
 - Planner가 final_answer(텍스트)와 answer_blocks(카드용 구조화)를 함께 반환 → 화면은 answer_blocks로 렌더링
 
 ## 현재 상태
-- 골격 + 실구현 일부 완료:
-  · RAG: common/rag.py **Chroma 실구현** (라이브러리/데이터 없으면 stub 폴백 — CI 안전)
-  · 데이터 파이프라인: pipeline/ medallion (bronze→silver→gold) + 증분 감지(detect) + scripts/update_laws.py 배치 + Airflow @weekly DAG
-  · 하네스: verifier(근거 검증)·contacts(연락처 환각0)·llm(구조화 출력 강제)
-  · 3축 루프: scripts/evaluate.py (평가 hit@k / 비용 티어링 / 환각 grounding)
-  · 웹서비스: app/ — FastAPI(/api/consult·/api/draft + Jinja 메인화면) + Streamlit 데모 UI, service.py 공유 로직
-  · 인프라: docs/INFRA.md (EC2 $120 예산 설계)
-- 3케이스(단일/복수/범위밖) 실행 OK, **계약 테스트 21개 통과**
-- **데이터 파이프라인 실동작 검증 완료**: `build_index.py all`로 4분야 Chroma 구축(labor166/housing42/consumer58/finance812), 전 분야 실검색(is_real=True). 빌드 블로커 3건 수정(load_dotenv·법령API UA재시도·조문가지번호 중복id, PR #1). 협업 규약 정립(CLAUDE.md 브랜치·커밋·계층·직접push).
-- 다음: ① EC2에서 build_index(운영 단일본) ② 각 전문가 답변을 Bedrock으로(common/llm.py 구현, .env BEDROCK_MODEL 채우기) ③ evaluate로 hit@k 측정 ④ Day5 하이브리드 고도화
+- 최신 dev에 반영된 주요 축:
+  · RAG: `common/rag.py`가 chroma/pgvector/stub 백엔드를 제공하고, finance/labor는 하이브리드 검색을 사용
+  · 데이터 파이프라인: pipeline/ medallion (bronze→silver→gold) + 증분 감지 + Airflow @weekly DAG
+  · 하네스: verifier 문장 단위 근거 검증, contacts 환각 차단, llm 구조화 출력 강제
+  · 3축 루프: `scripts/evaluate.py` (검색 hit@k/MRR/recall, 비용, grounding) + 결과 이력/RDS 로깅
+  · 웹서비스: FastAPI/Jinja 메인 화면, `/api/consult`, `/api/draft`, 멀티턴 질문 재작성, Streamlit ops dashboard
+  · 인프라: EC2 + RDS(pgvector/logging) + S3 + Airflow + Nginx/HTTPS 통합 문서 `docs/INFRASTRUCTURE.md`
+- 로컬 기준선: `ruff check .` 통과, `python -m pytest tests/ -q` 기준 **50 tests 통과**
+- 다음 작업 축: ① 문서/CI/운영 절차 싱크 ② 인프라 재현성 보강 ③ 평가 수치 기반 RAG/라우팅 개선
 
 ## 3축 개선 루프
 각자 자기 에이전트를 `python scripts/evaluate.py <분야>`로 측정하며 개선:
 ①평가(hit@k/MRR, evals/<분야>.jsonl 기준) ②비용(티어링+토큰 추적) ③환각(verifier grounding rate).
-이력이 evals/results/에 날짜별 누적 → Day2 vs Day5 비교가 발표 자료.
+이력이 evals/results/에 날짜별 누적 → baseline vs 개선안 비교가 발표 자료.
 
 ## 함께 보는 문서
 - STRUCTURE.md: 전체 구조·파일 역할 지도
@@ -85,6 +85,6 @@
 - .github/workflows/ci.yml: 계약 테스트 CI 동봉됨
 
 ## 새 채팅에서 가장 먼저 할 일
-1. 이 zip 풀고 `python graph.py` 실행해 stub이 도는지 확인
-2. TODO.md 보고 각자 담당 분야 Day1(데이터 수집)부터
-3. Day0 API 신청이 안 됐으면 지금 신청
+1. `git switch dev && git pull --ff-only origin dev`로 최신 기준선 맞추기
+2. `python -m pytest tests/ -q`와 `ruff check .`로 로컬 기준선 확인
+3. 작업이 공용 파일/5개 이상이면 `feat/*` 브랜치에서 `dev` PR로 진행

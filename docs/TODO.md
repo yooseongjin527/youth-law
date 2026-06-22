@@ -8,14 +8,14 @@
 - [ ] 국가법령정보센터 API 신청 (수동 승인 1~2일): open.law.go.kr → OPEN API 신청 (목록+본문)
 - [x] ~~GitHub 레포 + 브랜치 규칙 + CI~~ → 규약 정립(CLAUDE.md 브랜치·커밋·계층·직접push 정책), CI 동작 중
 - [ ] pre-commit(ruff) 로컬 훅 설정 (CI는 동작 중)
-- [ ] 4명 전원 로컬에서 graph.py + pytest(21) 통과 확인
+- [ ] 4명 전원 로컬에서 graph.py + pytest(현재 50 tests) 통과 확인
 - [ ] Bedrock 계정/리전/모델ID 결정 + invoke_model 1회 성공 (리스크 ④)
 
-## 인프라 (오너 1명 — docs/INFRA.md)
-- [ ] Day0~1: EC2 t3.large 생성 + 보안그룹 + AWS Budgets $100 알림
-- [ ] Day1: 레포 클론 + .env + `python scripts/build_index.py all` 최초 구축
-- [ ] Day2: cron 주1회 증분 배치 등록 (`scripts/update_laws.py`) + 2회 연속 실행해 스킵 확인
-- [ ] Day4~5(여유 시): Airflow standalone + law_incremental_update DAG 활성화
+## 인프라 (오너 1명 — docs/INFRASTRUCTURE.md)
+- [x] EC2 t3.large + RDS(pgvector/logging) + S3 + systemd 3종 + Nginx/HTTPS 구축 문서화
+- [x] Airflow standalone + law_incremental_update DAG 활성화 절차 코드화
+- [ ] 운영 런북 확정: 배포 전후 health check, RDS 로그 확인, rollback, stop/start 순서
+- [ ] 인프라 재현성 점검: EC2 requirements와 DATABASE_URL 드라이버 표기 일치
 
 ## 데이터 파이프라인 (medallion — pipeline/)
 - [x] ~~Day1: LAW_LIST 법령명 확정~~ → 8개 법령 전부 API 조회 성공 (현행 명칭 유효)
@@ -60,25 +60,26 @@
 - [x] ~~백엔드 연결·index·search 구현~~ → 완료 (검색=rag.py, 적재=pipeline/gold.py)
 - [x] ~~Day1: 법령 API 샘플 호출 — silver 파싱 태그 일치 확인 (리스크 ②)~~ → 완료
 - [x] ~~Day1~2: `build_index.py all` 실데이터 구축~~ → 4분야 구축·실검색(is_real=True) 확인. EC2 구축만 남음
-- [ ] 후속: RAG score 정규화 — gold.py가 컬렉션을 cosine 아닌 기본 L2로 만들어 `1-dist`가 음수(랭킹은 정상). `hnsw:space=cosine`으로 수정
-- [ ] Day5: 하이브리드 검색(BM25+임베딩)으로 고도화
+- [x] ~~후속: RAG score 정규화~~ → Chroma 컬렉션을 `hnsw:space=cosine`으로 재생성
+- [x] ~~Day5: 하이브리드 검색(BM25+임베딩)으로 고도화~~ → finance/labor는 common/rag.py에서 하이브리드 게이트 적용
+- [ ] 후속: housing/consumer 하이브리드·동의어 확장 여부를 holdout/evaluate로 결정
 - [ ] Day5: 리랭킹(cross-encoder) 추가
 - [ ] Day5: 4분야 검색 품질 비교 측정 (발표 지표)
 
 ### agents/supervisor.py — 분야 자동 분류
-- [ ] Day3: 키워드 → Bedrock few-shot 분류로 교체
+- [x] ~~Day3: 키워드 → Bedrock few-shot 분류로 교체~~ → 실패 시 키워드 백스톱 유지
 - [ ] Day4: 모호한 질문 confidence 처리
-- [ ] Day5: 분류 정확도 평가셋 (발표용)
+- [x] ~~Day5: 분류 정확도 평가셋/스크립트~~ → `scripts/eval_routing.py`
 
 ### agents/verifier.py — 답변-근거 검증 (하네스 핵심, HARNESS.md)
-- [ ] Day4: _is_grounded 1차 구현 — 어휘 겹침(답변 명사가 snippet에 있는지)
-- [ ] Day4: 2차 — Bedrock "주장-조문 근거 판정" (정밀)
-- [ ] Day5: 문장 단위 검증 세분화
+- [x] ~~Day4: _is_grounded 1차 구현~~ → 인용/snippet 구조 가드
+- [x] ~~Day4: 2차 — Bedrock "주장-조문 근거 판정"~~ → 문장 단위 ungrounded 판정
+- [x] ~~Day5: 문장 단위 검증 세분화~~ → 환각 문장 제거 후 통과/전부 환각이면 탈락
 - [ ] Day5: verification_report → "환각 차단 N건" 발표 지표화
 
 ### common/llm.py — Bedrock 호출 + 구조화 출력 강제
-- [ ] Day3: call_bedrock 구현 (boto3 invoke_model, .env에서 모델ID/리전)
-- [ ] Day3: 전문가들이 call_bedrock_json으로 DomainAnswer 형식 강제
+- [x] ~~Day3: call_bedrock 구현~~ → boto3 Bedrock 호출 + task별 모델 티어
+- [x] ~~Day3: 전문가들이 call_bedrock_json으로 형식 강제~~ → supervisor/answer/verifier 경로 적용
 
 ### agents/planner.py — 종합 (조문 원문 + 연락처)
 - [ ] Day3: 각 분야 answer를 Bedrock으로 (요약 + 상세 분리)
@@ -92,7 +93,7 @@
 
 ### common/cost.py + scripts/evaluate.py — 3축 개선 루프
 - [ ] Day3: cost.py 모델 ID·단가를 실제 값으로 (.env)
-- [ ] Day3: llm.py call_bedrock에 usage 기록 연결 (tracker.record)
+- [x] ~~Day3: llm.py call_bedrock에 usage 기록 연결~~ → tracker.record + RDS no-op 로깅 연결
 - [ ] Day5: "Supervisor Haiku 전환 절감률" + "단순검색 vs 하이브리드 hit@k" 비교표 (발표)
 
 ### common/contacts.py — 연락처
@@ -100,13 +101,13 @@
 - [ ] Day4: 상황별 세부 연락처 분기
 
 ### graph.py — 파이프라인 / 관측성
-- [ ] **Day2: LangSmith 트레이싱 켜기** — .env에 LANGSMITH_API_KEY + LANGCHAIN_TRACING_V2=true (코드 수정 0줄). 디버깅 시작되는 날 눈이 먼저 있어야 함
+- [x] ~~Day2: LangSmith 트레이싱 켜기~~ → raw Bedrock 호출을 common/llm.py에서 명시 traceable 래핑
 - [ ] Day5: 응답시간 측정 (LangSmith 트레이스에서 노드별 지연 확인)
 
 ### app/ — 웹서비스·UI (골격 구현 완료 — 동작함)
 - [x] ~~Streamlit 빈 화면~~ → **UI 골격 구현됨** (ui_streamlit.py: 카드+펼침+초안+검증리포트)
 - [x] ~~서버~~ → **FastAPI 구현됨** (api.py: /api/consult·/api/draft·Jinja 메인화면·/docs)
-- [ ] Day4: 실데이터로 양쪽 UI 동작 확인 (`uvicorn app.api:app` / `streamlit run app/ui_streamlit.py`)
+- [ ] Day4: 실데이터로 UI 동작 확인 (`uvicorn app.api:app` / `streamlit run app/ui_streamlit.py` / `streamlit run app/ui_dashboard.py`)
 - [ ] Day6: 화면 다듬기 — style.css·문구·로딩 표시 + LangGraph .stream()으로 진행상황 표시(선택)
 - [ ] Day6: 데모 시나리오 4개 리허설 (단일/복수/범위밖/초안)
 - [ ] Day6: 데모 시나리오 준비 (단일/복수/범위밖/문서초안 4케이스) + 발표자료

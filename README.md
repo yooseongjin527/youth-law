@@ -47,14 +47,14 @@ tests/test_contracts.py # 계약 테스트
 - **docs/API_SETUP.md** — 데이터 API 인증키 신청 절차 (Day 0)
 - docs/SPEC.md — State·I/O 계약 (코드보다 우선) / CLAUDE.md — 작업 규약 / docs/TODO.md — 작업 보드
 - docs/HANDOFF.md — 새 채팅에 맥락 이어주는 인수인계
-- .github/workflows/ci.yml — PR마다 계약 테스트 자동 실행
+- .github/workflows/ci.yml — PR과 main/dev push마다 계약 테스트 자동 실행
 
 ## 실행
 ```bash
 cp .env.example .env               # 키 채우기 (팀 공유, docs/API_SETUP.md)
 pip install -r requirements.txt
 python graph.py                          # 단일/복수/범위밖 3케이스 확인 (CLI, 데이터 없어도 stub로 동작)
-python -m pytest tests/                  # 계약 검사 (21 passed)
+python -m pytest tests/                  # 계약 검사 (현재 50 tests)
 uvicorn app.api:app --reload --port 8000 # 웹서비스 (메인화면 http://localhost:8000, API문서 /docs)
 streamlit run app/ui_streamlit.py        # 데모 UI (발표용, http://localhost:8501)
 ruff format . && ruff check .            # 스타일 통일
@@ -62,7 +62,7 @@ ruff format . && ruff check .            # 스타일 통일
 
 ### 실데이터로 RAG 켜기 (stub → 실검색)
 ```bash
-pip install chromadb sentence-transformers   # 무거워서 requirements와 분리 (build/검색에 필요)
+pip install chromadb sentence-transformers rank-bm25 kiwipiepy   # build/검색에 필요
 # .env에 LAW_GO_KR_OC 채운 뒤 (벡터DB는 이 키 하나로 구축됨)
 python scripts/build_index.py all            # 4분야 구축 (bronze→silver→gold)
 ```
@@ -70,8 +70,9 @@ python scripts/build_index.py all            # 4분야 구축 (bronze→silver�
 > (PowerShell은 `$env:PYTHONUTF8=1`) 후 실행. 첫 실행 시 임베딩 모델 ~400MB 다운로드.
 
 ### 협업 규약 (CLAUDE.md '브랜치 전략'·'커밋 규칙')
-- 변경 **5개 미만 & 공용 파일 미포함** → `main` 직접 push 허용 (push 전 로컬 `pytest` 통과 필수).
-  **5개 이상** 또는 **공용 파일**(state/graph/rag/contacts/drafter/supervisor/planner/llm/cost/pipeline) → 기능 브랜치 + PR.
+- `main` 직접 push 금지. 평소 통합 브랜치는 `dev`, 릴리스 때만 `dev` → `main` PR.
+- 변경 **5개 미만 & 공용 파일 미포함** → `dev` 직접 push 허용 (push 전 로컬 `pytest` 통과 필수).
+  **5개 이상** 또는 **공용 파일**(state/graph/rag/contacts/drafter/supervisor/planner/llm/cost/pipeline) → `feat/*` 브랜치 + `dev` PR.
 - 커밋: `<type>(<scope>): 한글 제목` (Conventional Commits). 브랜치: `<type>/<scope>-주제`.
 - 개인 메모는 `cp CLAUDE.local.md.example CLAUDE.local.md` (커밋 안 됨).
 
@@ -98,7 +99,8 @@ python scripts/build_index.py all            # 4분야 구축 (bronze→silver�
 
 ## 4명이 각자 RAG
 - 분야마다 별도 벡터DB 컬렉션(law_labor 등). 4명이 각자 자기 컬렉션 독립 구축.
-- 검색 '기법'은 common/rag.py 하나로 통일 → 고도화 시 4분야 자동 적용 + 효과 비교 가능.
+- 검색 인터페이스는 common/rag.py 하나로 통일. 하이브리드/BM25·쿼리확장은 분야별 게이트로 켜며,
+  변경 전후 효과는 evaluate로 비교한다.
 
 ## 데이터 파이프라인 (medallion + 증분 갱신)
 ```bash
@@ -125,7 +127,7 @@ python scripts/evaluate.py labor   # 자기 분야 스코어카드 (housing/cons
 | ③ 환각 | grounding rate, 평균 인용 | 답변이 verifier 검증을 통과하는가 |
 
 결과는 evals/results/<분야>_history.jsonl에 날짜별 누적 →
-**Day2(단순검색) vs Day5(하이브리드) 비교표가 발표의 기술 깊이 슬라이드가 된다.**
+**baseline vs 개선안 비교표가 발표의 기술 깊이 슬라이드가 된다.**
 루프: 구현 수정 → evaluate → 숫자 확인 → 다시 수정. 숫자가 안 오르면 개선이 아니다.
 
 ## 발표 메시지
