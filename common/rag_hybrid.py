@@ -42,7 +42,7 @@ _DEFAULT_ALPHA = 0.7
 # ★ 교훈: synonyms가 비면 BM25가 평어 토큰을 노이즈로 매칭 → 임베딩만 못함.
 #   synonyms 충실한 분야만 BM25를 낮은 α로 섞고, 빈 분야는 α=1.0(임베딩)로 둔다.
 _ALPHA_BY_DOMAIN = {
-    "finance": 0.6,    # synonyms 충실 → hit@3 0.52→1.0 (MRR 0.86)
+    "finance": 0.6,    # benchmark hit@3 우선(α=0.9는 MRR 우세)
     "labor":   0.7,    # 민지 synonyms → hit@3 0.65→0.90
     "housing": 0.9,    # synonyms 채움 → hit@3 0.875→1.0 (MRR 0.667→0.969)
     "consumer": 0.9,   # synonyms 채움 → hit@3 0.864→1.0 (MRR 0.712→0.871)
