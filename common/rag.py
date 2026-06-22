@@ -57,7 +57,7 @@ _DEFAULT_ALPHA = 0.7
 #   synonyms 충실한 분야만 BM25를 낮은 α로 섞고, 빈 분야는 α=1.0(임베딩)로 둔다.
 _ALPHA_BY_DOMAIN = {
     "finance": 0.6,    # benchmark hit@3 우선(α=0.9는 MRR 우세)
-    "labor":   0.7,    # 민지 synonyms → hit@3 0.65→0.90
+    "labor":   0.6,    # 민지 synonyms → hit@3 0.65→0.90
 }
 _MAX_EXPANSION_TERMS = 6  # 너무 많이 붙이면 임베딩 희석 → 상한
 
