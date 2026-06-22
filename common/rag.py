@@ -6,18 +6,19 @@
 
 ★ 백엔드 선택 (env RAG_BACKEND) ★
 - chroma (기본): 로컬 파일 벡터DB. 공짜·오프라인 — 일상 개발/CI.
-- pgvector: RDS PostgreSQL + pgvector(law_chunks 테이블). "한 DB로 통합" 데모용.
-  같은 silver·같은 임베딩이므로 검색 결과는 동일. DATABASE_URL 필요.
+- pgvector: RDS PostgreSQL + pgvector(law_chunks 테이블). "한 DB로 통합" 데모용. DATABASE_URL 필요.
 - 둘 중 무엇도 준비 안 되면 stub 폴백. 명시적으로 pgvector를 골랐는데 연결이
   안 되면 chroma로 슬쩍 넘어가지 않고 stub으로 떨어진다(오설정을 가리지 않음).
 
 ★ 검색기법 — 분야별 게이트(_HYBRID_DOMAINS) ★
-하이브리드 로직(common/rag_hybrid.py에 '승격 대기'였던 것)을 이 파일로 흡수했다.
-단 4분야 일괄이 아니라 분야별로 고른다 — 그리고 하이브리드는 chroma 백엔드에서만 동작한다
-(BM25 인덱스를 chroma 컬렉션 문서로 만들기 때문). pgvector/stub은 임베딩-only.
-  · finance·labor      → (chroma) 하이브리드(BM25+임베딩) + 분야별 α·쿼리확장
-  · housing·consumer   → 임베딩-only(쿼리확장·BM25 없음) — 승격 전 동작 그대로(미합의 분야 보존)
+하이브리드 로직(옛 common/rag_hybrid.py)을 이 파일로 흡수했다. 4분야 일괄이 아니라 분야별로 고른다.
+하이브리드(BM25+임베딩+쿼리확장)는 **chroma·pgvector 양쪽에서 동작**한다 — BM25 인덱스를
+해당 백엔드의 코퍼스(chroma 컬렉션 / law_chunks 테이블)로 구축한다. (stub만 임베딩-only.)
+  · finance·labor      → 하이브리드(BM25+임베딩) + 분야별 α·쿼리확장
+  · housing·consumer   → 임베딩-only(쿼리확장·BM25 없음)
 새 분야가 하이브리드를 원하면 _HYBRID_DOMAINS에 추가(담당 합의 후).
+※ 과거 "pgvector=임베딩-only라 결과 동일"은 틀린 설명이었다 — pgvector에서 하이브리드 분야가
+  BM25·확장 없이 강등돼 정답 조문을 놓치는 버그가 있었다(이 파일에서 수정).
 
 검증(검색축만 — Bedrock 불필요):
   .venv/bin/python common/rag.py finance   # finance 평가셋 hit@3/MRR + α 스윕
@@ -44,9 +45,9 @@ from typing import TypedDict  # noqa: E402
 from pipeline.config import CHROMA_DIR, EMBED_MODEL  # noqa: E402
 
 # ── 분야별 검색기법 게이트 ──────────────────────────────────────────
-# 하이브리드(BM25+임베딩+쿼리확장)를 적용할 분야. 나머지(housing/consumer)는 임베딩-only
-# (rag.py 승격 전 동작 그대로). 분야 담당이 합의·튜닝하면 여기에 추가한다.
-# ※ 하이브리드는 chroma 백엔드에서만 — BM25 인덱스를 chroma 컬렉션으로 구축하기 때문.
+# 하이브리드(BM25+임베딩+쿼리확장)를 적용할 분야. 나머지(housing/consumer)는 임베딩-only.
+# 분야 담당이 합의·튜닝하면 여기에 추가한다. chroma·pgvector 양쪽에서 하이브리드 동작
+# (BM25 인덱스를 해당 백엔드 코퍼스로 구축 — chroma 컬렉션 또는 law_chunks 테이블).
 _HYBRID_DOMAINS = {"finance", "labor"}
 
 # ── 분야별 튜닝 노브 (하이브리드 분야에서만 사용) ─────────────────────
@@ -164,9 +165,10 @@ class DomainRAG:
         pref = os.getenv("RAG_BACKEND", "chroma").lower()
         if pref == "pgvector":
             # 명시적 pgvector 선택 — 안 되면 stub(절대 chroma로 슬쩍 안 넘어감)
-            # pgvector는 임베딩-only(BM25 미적용). 하이브리드는 chroma 경로 전용.
             if self._try_pgvector():
                 self.backend = "pgvector"
+                if self.hybrid_enabled:       # 하이브리드 분야는 pgvector에서도 BM25 구축
+                    self._build_bm25_pgvector()  # law_chunks 코퍼스로 BM25 인덱스
             return
 
         try:  # 기본 chroma — 실패 시 stub 폴백
@@ -231,20 +233,48 @@ class DomainRAG:
             for d, m in zip(data["documents"], data["metadatas"])
         ]
 
+    def _build_bm25_pgvector(self) -> None:
+        """law_chunks(pgvector) 분야 전체 문서로 BM25 인덱스 구축. rank_bm25 없으면 미구축."""
+        try:
+            from rank_bm25 import BM25Okapi
+        except ImportError:
+            return
+        from sqlalchemy import text
+        with self._engine.connect() as conn:
+            rows = conn.execute(
+                text("select law_name, article, enforced_date, source_url, content "
+                     "from law_chunks where domain = :d"),
+                {"d": self.domain},
+            ).fetchall()
+        if not rows:
+            return
+        docs = [
+            {"law_name": r.law_name, "article": r.article,
+             "enforced_date": r.enforced_date or "", "text": r.content,
+             "source_url": r.source_url or ""}
+            for r in rows
+        ]
+        self._bm25 = BM25Okapi([_tokenize_ko(d["text"]) for d in docs])
+        self._bm25_corpus_docs = docs
+
     def search(self, query: str, k: int = 3) -> list[RetrievedChunk]:
-        """질의 → (백엔드 → 분야별 검색기법) → top-k.
-        pgvector/stub: 임베딩-only. chroma: finance·labor는 하이브리드+확장,
-        housing·consumer는 임베딩-only(확장 없음, 승격 전 동작)."""
+        """질의 → (분야별 검색기법, 백엔드 무관) → top-k.
+        finance·labor(_HYBRID_DOMAINS): 쿼리확장 + (BM25 있으면)하이브리드 — chroma·pgvector 공통.
+        housing·consumer: 임베딩-only(확장·BM25 없음). stub: 더미."""
+        if self.backend == "stub":
+            return self._search_stub(k)
+        if self.hybrid_enabled:
+            eq = _expand_query(self.domain, query)       # ★finance/labor만 확장(검색 입력만)
+            if self.has_bm25:
+                return self._search_hybrid(eq, k)        # BM25+임베딩 가중결합
+            return self._search_embedding(eq, k)         # rank_bm25 없을 때: 확장-임베딩
+        return self._search_embedding(query, k)          # housing/consumer: 임베딩-only
+
+    def _search_embedding(self, query: str, k: int) -> list[RetrievedChunk]:
+        """백엔드별 임베딩-only 검색 디스패치."""
         if self.backend == "pgvector":
             return self._search_pgvector(query, k)
-        if self.backend == "chroma":
-            if self.hybrid_enabled:
-                eq = _expand_query(self.domain, query)   # ★finance/labor만 확장(검색 입력만)
-                if self.has_bm25:
-                    return self._search_hybrid(eq, k)
-                return self._search_chroma(eq, k)        # rank_bm25 없을 때: 확장-임베딩
-            return self._search_chroma(query, k)         # housing/consumer: 임베딩-only
-        return self._search_stub(k)
+        return self._search_chroma(query, k)
 
     # ── chroma 임베딩 검색 ──────────────────────────
     def _search_chroma(self, query: str, k: int) -> list[RetrievedChunk]:
@@ -264,20 +294,49 @@ class DomainRAG:
             })
         return chunks
 
-    # ── chroma 하이브리드 검색 (BM25 + 임베딩, finance·labor) ──
+    # ── 임베딩 후보 (chroma·pgvector 공통, 하이브리드 결합용) ──
+    def _embed_candidates(self, query: str, n: int) -> tuple[dict, dict]:
+        """임베딩 top-n 후보 → ({did: 유사도}, {did: chunk}). 백엔드별 구현."""
+        emb_scores: dict[str, float] = {}
+        data: dict[str, dict] = {}
+        if self.backend == "pgvector":
+            from sqlalchemy import text
+            emb = _get_model().encode([query])[0].tolist()
+            vec = "[" + ",".join(f"{x:.6f}" for x in emb) + "]"
+            sql = text(
+                "select law_name, article, enforced_date, source_url, content, "
+                "  1 - (embedding <=> cast(:vec as vector)) as score "
+                "from law_chunks where domain = :domain "
+                "order by embedding <=> cast(:vec as vector) limit :k"
+            )
+            with self._engine.connect() as conn:
+                rows = conn.execute(
+                    sql, {"vec": vec, "domain": self.domain, "k": n}
+                ).fetchall()
+            for r in rows:
+                did = f"{r.law_name}_{r.article}"
+                emb_scores[did] = float(r.score)
+                data[did] = {"law_name": r.law_name, "article": r.article,
+                             "enforced_date": r.enforced_date or "", "text": r.content,
+                             "source_url": r.source_url or ""}
+        else:  # chroma
+            emb = _get_model().encode([query]).tolist()
+            res = self.collection.query(query_embeddings=emb, n_results=n)
+            for doc, meta, dist in zip(
+                res["documents"][0], res["metadatas"][0], res["distances"][0]
+            ):
+                did = f"{meta['law_name']}_{meta['article']}"
+                emb_scores[did] = 1 - dist
+                data[did] = {"law_name": meta["law_name"], "article": meta["article"],
+                             "enforced_date": meta["enforced_date"], "text": doc,
+                             "source_url": meta["source_url"]}
+        return emb_scores, data
+
+    # ── 하이브리드 검색 (BM25 + 임베딩, finance·labor) — chroma·pgvector 공통 ──
     def _search_hybrid(self, query: str, k: int) -> list[RetrievedChunk]:
         fetch_k = k * 3
-        # ① 임베딩
-        emb = _get_model().encode([query]).tolist()
-        eres = self.collection.query(query_embeddings=emb, n_results=fetch_k)
-        emb_scores, data = {}, {}
-        edocs, emetas, edists = eres["documents"][0], eres["metadatas"][0], eres["distances"][0]
-        for doc, meta, dist in zip(edocs, emetas, edists):
-            did = f"{meta['law_name']}_{meta['article']}"
-            emb_scores[did] = 1 - dist
-            data[did] = {"law_name": meta["law_name"], "article": meta["article"],
-                         "enforced_date": meta["enforced_date"], "text": doc,
-                         "source_url": meta["source_url"]}
+        # ① 임베딩 후보 (백엔드별)
+        emb_scores, data = self._embed_candidates(query, fetch_k)
         # ② BM25
         raw = self._bm25.get_scores(_tokenize_ko(query))
         bmax = max(raw) if max(raw) > 0 else 1.0
