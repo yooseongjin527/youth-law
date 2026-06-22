@@ -6,7 +6,6 @@
 > 상세 절차/배경은 분리 문서 참조:
 > - 단계별 구축 가이드: [INFRA_IMPLEMENTATION_GUIDE.md](INFRA_IMPLEMENTATION_GUIDE.md)
 > - 운영 대시보드: [OPS_DASHBOARD_GUIDE.md](OPS_DASHBOARD_GUIDE.md)
-> - HTTPS 셋업: [../infra/HTTPS_SETUP.md](../infra/HTTPS_SETUP.md)
 > - 프로비저닝: [../infra/PROVISIONING.md](../infra/PROVISIONING.md)
 > - Terraform: [../infra/terraform/README.md](../infra/terraform/README.md)
 
@@ -115,14 +114,79 @@
 ① 운영 개요 ② 비용·토큰 ③ 품질(eval) ④ **실행 성능(LangSmith — 노드별 레이턴시·p50/p95·에러율)** ⑤ 최근 상담.
 
 ## 9. HTTPS (Nginx + Certbot + DuckDNS)
+ALB 없이 Nginx 리버스프록시 + Let's Encrypt(Certbot). 단일 인스턴스·비용 최소화엔 이게 맞다.
+**왜 ALB가 아닌가**: DuckDNS는 A레코드만 잘 되어 ACM(CNAME DNS검증)과 안 맞고, ALB는 상시 과금이라 stop/start 비용전략과 충돌.
+
 | 도메인 | 백엔드 | 노출 |
 |---|---|---|
 | `https://youthlaw-demo.duckdns.org` | FastAPI :8000 | 공개 |
 | `https://youthlaw-ops.duckdns.org` | Streamlit :8501 | **basic auth**(user `youthlaw`) |
 
-- 단일 cert(SAN 2개), Let's Encrypt, `certbot.timer` 자동갱신, http→https 301.
-- nginx 설정 템플릿: [`infra/nginx/youthlaw.conf`](../infra/nginx/youthlaw.conf), 절차: [`infra/HTTPS_SETUP.md`](../infra/HTTPS_SETUP.md).
-- DuckDNS는 A레코드만 잘 되어 ACM(CNAME 검증)과 안 맞음 → ALB+ACM 대신 Certbot 채택 이유.
+### 9-1. DuckDNS (무료 서브도메인 2개)
+duckdns.org 소셜 로그인 → 상단 **token** 복사(계정 1개=토큰 1개) → `youthlaw-demo`·`youthlaw-ops`
+add domain → 각 **current ip**를 Elastic IP `54.71.248.50`으로 update. 확인: `nslookup youthlaw-demo.duckdns.org`.
+
+### 9-2. 설치 + Nginx 설정
+```bash
+sudo apt-get install -y nginx certbot python3-certbot-nginx apache2-utils
+sudo systemctl enable --now nginx
+sudo htpasswd -c /etc/nginx/.htpasswd youthlaw   # ops 대시보드 비번(커밋 금지)
+```
+`/etc/nginx/sites-available/youthlaw` (certbot 적용 '전' 템플릿):
+```nginx
+# 상담(FastAPI :8000) — 공개
+server {
+    listen 80;
+    server_name youthlaw-demo.duckdns.org;
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+# 대시보드(Streamlit :8501) — basic auth + WebSocket(Streamlit 필수)
+server {
+    listen 80;
+    server_name youthlaw-ops.duckdns.org;
+    location / {
+        auth_basic "youth-law ops";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        proxy_pass http://127.0.0.1:8501;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 86400;
+    }
+}
+```
+```bash
+sudo ln -sf /etc/nginx/sites-available/youthlaw /etc/nginx/sites-enabled/youthlaw
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### 9-3. 인증서 발급 (두 도메인 한 cert)
+```bash
+sudo certbot --nginx -d youthlaw-demo.duckdns.org -d youthlaw-ops.duckdns.org \
+  --non-interactive --agree-tos -m <email> --redirect
+```
+certbot이 `listen 443 ssl`·인증서 경로·http→https 301 리다이렉트를 자동 주입. SAN 2개 단일 cert,
+만료 90일, **`certbot.timer`가 자동갱신**.
+
+### 9-4. 검증
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://youthlaw-demo.duckdns.org/health     # 200
+curl -s -o /dev/null -w "%{http_code}\n" https://youthlaw-ops.duckdns.org/            # 401(비번없음)
+curl -s -u youthlaw:<pw> -o /dev/null -w "%{http_code}\n" https://youthlaw-ops.duckdns.org/  # 200
+sudo certbot renew --dry-run        # 자동갱신 시뮬레이션 성공
+```
+- `/etc/nginx/.htpasswd`는 EC2 로컬·커밋 금지. 비번 변경: `sudo htpasswd /etc/nginx/.htpasswd youthlaw`.
 
 ## 10. 배포·프로비저닝
 - **IaC**: `infra/terraform/`(EC2·S3·RDS, `enable_rds` 게이트). `terraform apply`로 인스턴스 생성.
