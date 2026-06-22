@@ -62,4 +62,6 @@ if st.button("상담", type="primary") and len(question.strip()) >= 2:
             st.json(result["verification_report"])
 
 st.divider()
-st.caption("국가법령정보센터 현행 법령 기반 일반 정보 안내입니다. 구체적 사건은 전문가와 상담하세요.")
+st.caption(
+    "국가법령정보센터 현행 법령 기반 일반 정보 안내입니다. 구체적 사건은 전문가와 상담하세요."
+)

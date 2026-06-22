@@ -15,8 +15,8 @@ from agents.finance import finance_agent
 from agents.housing import housing_agent
 from agents.labor import labor_agent
 from agents.planner import planner_agent
-from agents.verifier import verifier_agent
 from agents.supervisor import route, supervisor_agent
+from agents.verifier import verifier_agent
 from state import LegalState
 
 
@@ -56,12 +56,15 @@ if __name__ == "__main__":
 
     print("=== 케이스 1: 단일 분야 (주택) ===")
     r = run("집주인이 보증금을 안 돌려줘요")
-    print(r["final_answer"]); print("→", r["messages"][0])
+    print(r["final_answer"])
+    print("→", r["messages"][0])
 
     print("\n=== 케이스 2: 복수 분야 (노동+주택) ===")
     r = run("회사 그만두는데 월급도 안 주고 기숙사 보증금도 안 줘요")
-    print(r["final_answer"]); print("→", r["messages"][0])
+    print(r["final_answer"])
+    print("→", r["messages"][0])
 
     print("\n=== 케이스 3: 범위 밖 ===")
     r = run("친구가 때려서 고소하고 싶어요")
-    print(r["final_answer"]); print("→", r["messages"][0])
+    print(r["final_answer"])
+    print("→", r["messages"][0])

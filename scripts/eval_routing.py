@@ -96,7 +96,10 @@ def print_report(rows: list[dict], domains: list[str]):
     print(f"{'='*64}")
 
     # 경로별 종합 지표
-    header = f"  {'경로':<16}{'recall':>8}{'미스':>6}{'거짓OOS':>8}{'과잉fanout':>11}{'평균분야':>9}"
+    header = (
+        f"  {'경로':<16}{'recall':>8}{'미스':>6}"
+        f"{'거짓OOS':>8}{'과잉fanout':>11}{'평균분야':>9}"
+    )
     print(header)
     print(f"  {'-'*58}")
     for key, label in paths:
@@ -105,7 +108,7 @@ def print_report(rows: list[dict], domains: list[str]):
               f"{s['over_fanout']:>11}{s['avg_domains']:>9}")
 
     # 분야별 recall (어디가 약한지)
-    print(f"\n  분야별 recall")
+    print("\n  분야별 recall")
     print(f"  {'경로':<16}" + "".join(f"{d:>10}" for d in domains))
     print(f"  {'-'*58}")
     for key, label in paths:
@@ -116,7 +119,10 @@ def print_report(rows: list[dict], domains: list[str]):
     rescued = [r for r in rows if r["gold"] not in r["keyword"] and r["gold"] in r["bedrock"]]
     print(f"\n  [키워드 미스 → Bedrock 구제] {len(rescued)}건" + (" (상위 6)" if rescued else ""))
     for r in rescued[:6]:
-        print(f"    ({r['gold']}) {r['q'][:46]}  kw={r['keyword'] or '[]'} → bedrock={r['bedrock']}")
+        print(
+            f"    ({r['gold']}) {r['q'][:46]}  kw={r['keyword'] or '[]'} "
+            f"→ bedrock={r['bedrock']}"
+        )
 
     # 정성 근거: Bedrock 과잉 fan-out 사례 (precision 리스크)
     overs = [r for r in rows if set(r["bedrock"]) - {r["gold"]}]
