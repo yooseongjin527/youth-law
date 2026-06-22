@@ -8,15 +8,15 @@
 4) DomainAnswer 반환
 
 ★ 이번 변경 ★
-- 검색기: common/rag_hybrid.py 의 DomainRAG(BM25+임베딩 하이브리드, 분야별 α·쿼리확장).
-  common/rag.py 와 동일 인터페이스라 drop-in. (synonyms/labor.jsonl 기준 hit@3 0.65→0.90)
+- 검색기: common/rag.py 의 DomainRAG(BM25+임베딩 하이브리드, 분야별 α·쿼리확장).
+  4분야 공통 엔진(하이브리드 승격 완료). (synonyms/labor.jsonl 기준 hit@3 0.65→0.90)
 - 불변식(빈 검색·Bedrock 실패 폴백·DomainAnswer 조립·반환 구조)은
   common/base_agent_answer.py 의 run_domain_agent 가 한곳에서 강제.
   → labor.py 는 '분야 특성'(검색기·프롬프트)만 주입한다.
 """
 from common.base_agent_answer import run_domain_agent
 from common.drafter import make_draft
-from common.rag_hybrid import DomainRAG
+from common.rag import DomainRAG
 from state import LegalState
 
 _rag = DomainRAG(domain="labor", corpus_path="data/labor")

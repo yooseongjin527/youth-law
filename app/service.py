@@ -9,6 +9,7 @@ from agents.consumer import consumer_draft
 from agents.finance import finance_draft
 from agents.housing import housing_draft
 from agents.labor import labor_draft
+from common.logging_store import save_consultation
 from graph import build_graph
 from state import DOMAIN_KR
 
@@ -35,7 +36,7 @@ def init_state(question: str) -> dict:
 def consult(question: str) -> dict:
     """질문 → 그래프 실행 → UI가 그릴 수 있는 형태로 반환."""
     result = get_graph().invoke(init_state(question))
-    return {
+    payload = {
         "question": question,
         "domains": [
             {"id": d, "name": DOMAIN_KR.get(d, d)} for d in result["target_domains"]
@@ -45,6 +46,8 @@ def consult(question: str) -> dict:
         "answer_blocks": result.get("answer_blocks") or [],
         "verification_report": result.get("verification_report") or [],
     }
+    save_consultation(payload)  # RDS 로깅(꺼져 있으면 no-op, 실패해도 상담 안 죽음)
+    return payload
 
 
 def make_draft(question: str, domain: str) -> dict:

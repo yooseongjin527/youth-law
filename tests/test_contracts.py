@@ -2,6 +2,8 @@
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agents.consumer import consumer_agent
@@ -9,6 +11,34 @@ from agents.finance import finance_agent
 from agents.housing import housing_agent
 from agents.labor import labor_agent, labor_draft
 from state import DOMAINS
+
+
+@pytest.fixture(autouse=True)
+def _mock_live_llm(monkeypatch):
+    """계약 테스트는 구조 검증만 하고 live Bedrock 네트워크를 타지 않는다."""
+    import agents.housing as housing
+    import agents.verifier as verifier
+    import common.base_agent_answer as base_agent
+    import common.llm as llm
+
+    def fake_json(*args, required_keys=None, **kwargs):
+        keys = set(required_keys or [])
+        if "domains" in keys:
+            return {"domains": [], "confidence": 0.0}
+        if "used" in keys:
+            return {"answer": "검색된 조문에 근거한 테스트 답변입니다.", "used": [1]}
+        if "ungrounded" in keys:
+            return {"ungrounded": []}
+        return {"answer": "검색된 조문에 근거한 테스트 답변입니다.", "confidence": 0.8}
+
+    monkeypatch.setattr(
+        base_agent,
+        "call_bedrock",
+        lambda *a, **k: "검색된 조문에 근거한 테스트 답변입니다.",
+    )
+    monkeypatch.setattr(llm, "call_bedrock_json", fake_json)
+    monkeypatch.setattr(housing, "call_bedrock_json", fake_json)
+    monkeypatch.setattr(verifier, "call_bedrock_json", fake_json)
 
 
 def _state(q="테스트"):
@@ -108,7 +138,10 @@ def test_verifier_passes_grounded(monkeypatch):
     r = v.verifier_agent(state)
     assert len(r["verified_answers"]) == 1
     assert r["verification_report"][0]["dropped"] is False
-    assert r["verified_answers"][0]["answer"] == "임금은 매월 1회 이상 지급해야 합니다."  # 변형 없음
+    assert (
+        r["verified_answers"][0]["answer"]
+        == "임금은 매월 1회 이상 지급해야 합니다."
+    )  # 변형 없음
 
 
 def test_verifier_removes_hallucinated_sentence(monkeypatch):
@@ -253,6 +286,7 @@ def test_silver_chunking_항본문_누락방지():
 def test_api_consult():
     """웹서비스: /api/consult 가 분류·카드·검증리포트를 반환."""
     from fastapi.testclient import TestClient
+
     from app.api import app as fastapi_app
     client = TestClient(fastapi_app)
     r = client.post("/api/consult", json={"question": "보증금을 안 돌려줘요"})
@@ -266,6 +300,7 @@ def test_api_consult():
 def test_api_draft():
     """웹서비스: /api/draft 가 '초안' 경고 포함 문서를 반환."""
     from fastapi.testclient import TestClient
+
     from app.api import app as fastapi_app
     client = TestClient(fastapi_app)
     r = client.post("/api/draft", json={"question": "월급을 못 받았어요", "domain": "labor"})
@@ -276,6 +311,7 @@ def test_api_draft():
 def test_api_index_page():
     """웹서비스: 메인 화면(Jinja)이 렌더링됨."""
     from fastapi.testclient import TestClient
+
     from app.api import app as fastapi_app
     client = TestClient(fastapi_app)
     r = client.get("/")

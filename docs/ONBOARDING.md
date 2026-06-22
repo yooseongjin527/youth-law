@@ -38,6 +38,34 @@ python scripts/build_index.py all
 ✓ gold: law_finance 컬렉션 812건 upsert
 ```
 
+## 2-B. 데이터 공유 (S3) — 빌드 대신 받거나, 결과 올리기
+
+`data/`(벡터DB)는 git에 안 올라가므로 **S3 공용 버킷**으로 나눈다. OC 키·임베딩 재실행 없이 남이 빌드한 걸 바로 받아 쓸 수 있다.
+
+> ⚠️ **충돌 주의**: `silver/<분야>`·`bronze/<분야>`·`evals` 는 분야별 파일이라 각자 올려도 안 겹치지만,
+> **chroma(벡터DB)·manifest 는 4분야 한 덩어리**라 여러 명이 올리면 덮어쓴다.
+> → chroma는 **'빌더' 한 명(또는 EC2)만** 올린다. 그래서 명령이 스코프로 나뉨.
+
+**최초 1회 (한 명만):** 버킷 생성
+```powershell
+aws s3 mb s3://youth-law-data --region us-west-2   # 버킷명은 팀이 정함(전역 고유)
+```
+**받기 (모두, 안전):** `.env`에 `S3_DATA_BUCKET` 넣고
+```powershell
+python scripts/sync_data.py pull        # S3 → 로컬 (통합 chroma + 전 분야 silver/평가)
+```
+**자기 분야 산출물 올리기 (각자):** 명령에 분야를 직접 지정
+```powershell
+python scripts/sync_data.py push mine consumer   # 내 분야 silver/bronze/evals만 (분야는 본인 것으로)
+```
+**통합 벡터DB 올리기 (빌더 1명만):** pull로 전 분야 silver 모은 뒤
+```powershell
+python scripts/build_index.py all                # 4분야 통합 빌드
+python scripts/sync_data.py push corpus          # chroma + manifest 올림
+```
+> 정리: **각자 `push mine` → 빌더가 `pull` 후 통합 빌드 → `push corpus` → 나머지 `pull`.**
+> 사전: `aws configure`로 자격증명 1회 설정.
+
 ## 3. 데이터·RAG 확인
 
 **(a) 계약 테스트**
