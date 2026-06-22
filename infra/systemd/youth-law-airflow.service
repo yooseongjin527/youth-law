@@ -1,0 +1,21 @@
+[Unit]
+Description=Youth Law Airflow standalone (격리 venv — 앱과 별도)
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/youth_law
+# ★ PATH 필수: standalone이 내부적으로 `airflow webserver/scheduler`를 subprocess로
+#   spawn하므로 venv bin이 PATH에 없으면 FileNotFoundError로 webserver가 안 뜬다.
+Environment=PATH=/home/ubuntu/airflow-venv/bin:/usr/local/bin:/usr/bin:/bin
+Environment=AIRFLOW_HOME=/home/ubuntu/airflow
+Environment=AIRFLOW__CORE__LOAD_EXAMPLES=False
+Environment=AIRFLOW__CORE__DAGS_FOLDER=/home/ubuntu/youth_law/airflow/dags
+# DAG가 pipeline/scripts를 직접 import(PythonOperator)하므로 프로젝트 루트 필요
+Environment=PYTHONPATH=/home/ubuntu/youth_law
+ExecStart=/home/ubuntu/airflow-venv/bin/airflow standalone
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
