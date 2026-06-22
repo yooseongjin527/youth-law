@@ -121,6 +121,49 @@ def test_marker_triggers_rewrite(monkeypatch):
     assert "청약철회" in out and "그거" not in out
 
 
+def test_definition_followup_triggers_rewrite_without_pronoun(monkeypatch):
+    called = {"n": 0}
+
+    def _rewrite(*a, **k):
+        called["n"] += 1
+        return {
+            "standalone": (
+                "채권의 공정한 추심에 관한 법률 제12조에서 말하는 "
+                "불공정한 행위의 의미와 예시는 무엇인가요?"
+            )
+        }
+
+    monkeypatch.setattr("common.llm.call_bedrock_json", _rewrite)
+    history = [{
+        "question": "독촉 전화가 너무 많이 와요",
+        "answer": (
+            "채권의 공정한 추심에 관한 법률 제12조"
+            "(불공정한 행위의 금지)에 따라 "
+            "채권추심자가 해서는 안 되는 행위들이 법으로 규정되어 있습니다."
+        ),
+        "domains": ["finance"],
+    }]
+
+    out = ctx.contextualize(history, "불공정한 행위가 뭐냐")
+
+    assert called["n"] == 1
+    assert "제12조" in out
+    assert "불공정한 행위" in out
+
+
+def test_history_keeps_enough_answer_context_for_term_followup():
+    long_prefix = "앞부분 " * 80
+    history = [{
+        "question": "독촉 전화가 너무 많이 와요",
+        "answer": long_prefix + "채권추심법 제12조 불공정한 행위의 금지",
+        "domains": ["finance"],
+    }]
+
+    formatted = ctx._format_history(history)
+
+    assert "채권추심법 제12조" in formatted
+
+
 def test_rewrite_failure_falls_back_to_original(monkeypatch):
     def _fail(*a, **k):
         raise RuntimeError("network down")
