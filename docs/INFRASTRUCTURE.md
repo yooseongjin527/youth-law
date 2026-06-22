@@ -53,9 +53,9 @@
 - pgvector **0.8.1**, 테이블 `law_chunks`(벡터=ko-sroberta **768차원**)
 - 적재 현황(적재 증빙):
 
-  | domain | chunks |  | 합계 | 1,078 |
+  | domain | chunks |  | 합계 | 1,212 |
   |---|---|---|---|---|
-  | consumer | 58 | | finance | 812 |
+  | consumer | 192 | | finance | 812 |
   | housing | 42 | | labor | 166 |
 
 - 실검색 검증(stub 아님): `DomainRAG(RAG_BACKEND=pgvector).backend == "pgvector"`, `is_real == True`.
@@ -78,7 +78,7 @@
 
 ## 5. RAG 백엔드 (env `RAG_BACKEND`)
 - `chroma`(기본): 로컬 파일 벡터DB — 무서버·오프라인, 일상 개발/CI.
-- `pgvector`: RDS 통합 — 운영/데모. 같은 silver·같은 임베딩이라 검색 결과 동일.
+- `pgvector`: RDS 통합 — 운영/데모. 같은 silver·임베딩을 쓰되, 하이브리드 분야(finance·labor)는 pgvector에서도 BM25 인덱스를 law_chunks 코퍼스로 구축해 동일 검색기법을 적용한다(chroma와 같은 알고리즘).
 - 둘 다 불가 시 `stub` 폴백(그래프·테스트 항상 동작). 명시적 pgvector 실패는 chroma로 안 넘어가고 stub.
 - ⚠️ **pgvector connect_timeout 필수**: 없으면 도달 불가 DB에서 `engine.connect()`가 무한 대기 → 앱 부팅 행. `connect_args={"connect_timeout": 5}`로 빠른 실패+stub 폴백(common/rag.py).
 
