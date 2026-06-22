@@ -257,29 +257,37 @@ class DomainRAG:
         self._bm25 = BM25Okapi([_tokenize_ko(d["text"]) for d in docs])
         self._bm25_corpus_docs = docs
 
-    def search(self, query: str, k: int = 3) -> list[RetrievedChunk]:
+    def search(self, query: str, k: int = 3, law: str | None = None) -> list[RetrievedChunk]:
         """질의 → (분야별 검색기법, 백엔드 무관) → top-k.
         finance·labor(_HYBRID_DOMAINS): 쿼리확장 + (BM25 있으면)하이브리드 — chroma·pgvector 공통.
-        housing·consumer: 임베딩-only(확장·BM25 없음). stub: 더미."""
+        housing·consumer: 임베딩-only(확장·BM25 없음). stub: 더미.
+
+        law: 지정 시 해당 law_name 조문만 검색(분야 내 법 라우팅). consumer가 질문 의도로
+        법을 골라 비슷한 법끼리 서로 희석되는 것을 막는다(기본 None=분야 전체)."""
         if self.backend == "stub":
             return self._search_stub(k)
         if self.hybrid_enabled:
             eq = _expand_query(self.domain, query)       # ★finance/labor만 확장(검색 입력만)
             if self.has_bm25:
                 return self._search_hybrid(eq, k)        # BM25+임베딩 가중결합
-            return self._search_embedding(eq, k)         # rank_bm25 없을 때: 확장-임베딩
-        return self._search_embedding(query, k)          # housing/consumer: 임베딩-only
+            return self._search_embedding(eq, k, law)    # rank_bm25 없을 때: 확장-임베딩
+        return self._search_embedding(query, k, law)     # housing/consumer: 임베딩-only
 
-    def _search_embedding(self, query: str, k: int) -> list[RetrievedChunk]:
-        """백엔드별 임베딩-only 검색 디스패치."""
+    def _search_embedding(
+        self, query: str, k: int, law: str | None = None
+    ) -> list[RetrievedChunk]:
+        """백엔드별 임베딩-only 검색 디스패치 (law: 선택적 law_name 필터)."""
         if self.backend == "pgvector":
-            return self._search_pgvector(query, k)
-        return self._search_chroma(query, k)
+            return self._search_pgvector(query, k, law)
+        return self._search_chroma(query, k, law)
 
     # ── chroma 임베딩 검색 ──────────────────────────
-    def _search_chroma(self, query: str, k: int) -> list[RetrievedChunk]:
+    def _search_chroma(
+        self, query: str, k: int, law: str | None = None
+    ) -> list[RetrievedChunk]:
         emb = _get_model().encode([query]).tolist()
-        res = self.collection.query(query_embeddings=emb, n_results=k)
+        where = {"law_name": law} if law else None
+        res = self.collection.query(query_embeddings=emb, n_results=k, where=where)
         chunks = []
         for doc, meta, dist in zip(
             res["documents"][0], res["metadatas"][0], res["distances"][0]
@@ -360,20 +368,24 @@ class DomainRAG:
         return out
 
     # ── pgvector 검색 (RDS PostgreSQL 통합 백엔드, 임베딩-only) ──
-    def _search_pgvector(self, query: str, k: int) -> list[RetrievedChunk]:
+    def _search_pgvector(
+        self, query: str, k: int, law: str | None = None
+    ) -> list[RetrievedChunk]:
         from sqlalchemy import text
         emb = _get_model().encode([query])[0].tolist()
         vec = "[" + ",".join(f"{x:.6f}" for x in emb) + "]"  # pgvector 리터럴
+        law_clause = " and law_name = :law" if law else ""  # 분야 내 법 라우팅
         sql = text(
             "select law_name, article, enforced_date, source_url, content, "
             "  1 - (embedding <=> cast(:vec as vector)) as score "
-            "from law_chunks where domain = :domain "
+            f"from law_chunks where domain = :domain{law_clause} "
             "order by embedding <=> cast(:vec as vector) limit :k"
         )
+        params = {"vec": vec, "domain": self.domain, "k": k}
+        if law:
+            params["law"] = law
         with self._engine.connect() as conn:
-            rows = conn.execute(
-                sql, {"vec": vec, "domain": self.domain, "k": k}
-            ).fetchall()
+            rows = conn.execute(sql, params).fetchall()
         return [
             {
                 "law_name": r.law_name,
