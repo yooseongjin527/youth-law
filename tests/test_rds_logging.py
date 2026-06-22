@@ -7,6 +7,7 @@
 """
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -34,6 +35,30 @@ _EVAL = {"date": "2026-06-19", "domain": "housing",
 def test_get_engine_none_without_database_url(monkeypatch):
     monkeypatch.delenv("DATABASE_URL", raising=False)
     assert db.get_engine() is None
+
+
+def test_postgres_engine_uses_connect_timeout(monkeypatch):
+    """RDS 장애/보안그룹 문제 때 상담 응답이 DB 연결에 오래 묶이지 않게 한다."""
+    captured = {}
+
+    def fake_create_engine(url, **kwargs):
+        captured["url"] = url
+        captured["kwargs"] = kwargs
+        return object()
+
+    monkeypatch.setitem(
+        sys.modules,
+        "sqlalchemy",
+        SimpleNamespace(create_engine=fake_create_engine),
+    )
+    db._engine_for.cache_clear()
+    try:
+        engine = db._engine_for("postgresql+psycopg://u:p@example:5432/youthlaw")
+    finally:
+        db._engine_for.cache_clear()
+
+    assert engine is not None
+    assert captured["kwargs"]["connect_args"] == {"connect_timeout": 5}
 
 
 def test_logging_disabled_by_default(monkeypatch):

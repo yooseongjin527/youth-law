@@ -84,6 +84,7 @@
 
 ## 6. RDS 로깅 (env `ENABLE_RDS_LOGGING`)
 `ENABLE_RDS_LOGGING=true` + `DATABASE_URL` 둘 다 있을 때만 켜짐(기본 off, 미설정/실패 시 no-op — 상담을 절대 안 죽임). 테이블 3종:
+PostgreSQL 연결에는 `connect_timeout=5`를 적용해 RDS 장애·보안그룹 문제 때 상담 응답이 오래 묶이지 않게 한다.
 
 | 테이블 | 적재 지점 | 내용 |
 |---|---|---|
@@ -358,6 +359,7 @@ aws ec2 start-instances --instance-ids i-0f0980060f2a4a403 --region us-west-2
 
 ## 13. 자주 밟는 함정 (요약)
 - pgvector: `connect_timeout` 없으면 부팅 행 → 5초 빠른 실패.
+- RDS 로깅: 저장 실패는 no-op이지만 연결 시도는 `connect_timeout=5`로 제한해야 API 응답 지연을 피한다.
 - 드라이버: `postgresql+psycopg://` + `psycopg[binary]`(psycopg3 기준).
 - LangSmith: AWS 엔드포인트 + `LANGSMITH_WORKSPACE_ID` 셋트 아니면 403. `list_runs` limit≤100.
 - typing-extensions ≥4.14.1(airflow↔chromadb 공존).
