@@ -104,11 +104,19 @@ def eval_retrieval(domain: str, k: int = 3, split: str = "smoke", recall_k: int 
             "recall_k": recall_k, "recall_at_k": None, "by_category": {},
         }
     rag = _load_rag_class()(domain=domain)
+    # 분야가 법 라우팅(_route_law)을 노출하면 검색에도 동일 적용 → production 경로와 일치.
+    # (consumer: 전자상거래/방문판매/할부 3법을 의도로 분리 검색해 희석 방지)
+    try:
+        route_law = getattr(__import__(f"agents.{domain}", fromlist=["_route_law"]),
+                            "_route_law", None)
+    except Exception:
+        route_law = None
     hits, recall_hits, rr_sum = 0, 0, 0.0
     by_category = defaultdict(lambda: {"n": 0, "hits": 0, "recall_hits": 0, "rr_sum": 0.0})
     for item in items:
         category = _item_category(item)
-        chunks = rag.search(item["question"], k=k)
+        law = route_law(item["question"]) if route_law else None
+        chunks = rag.search(item["question"], k=k, law=law)
         rank = None
         for i, c in enumerate(chunks, start=1):
             if any(_matches(exp, c) for exp in item["expected_articles"]):
@@ -116,7 +124,7 @@ def eval_retrieval(domain: str, k: int = 3, split: str = "smoke", recall_k: int 
                 break
         recall_rank = rank
         if recall_k > k:
-            candidate_chunks = rag.search(item["question"], k=recall_k)
+            candidate_chunks = rag.search(item["question"], k=recall_k, law=law)
             recall_rank = next(
                 (
                     i for i, c in enumerate(candidate_chunks, start=1)

@@ -38,10 +38,13 @@ _NO_CHUNKS = (
 )
 
 
-def safe_search(rag, query: str, k: int = 3) -> list[dict]:
-    """Run domain RAG without letting retrieval failures crash the graph."""
+def safe_search(rag, query: str, k: int = 3, law: str | None = None) -> list[dict]:
+    """Run domain RAG without letting retrieval failures crash the graph.
+
+    law: 선택적 law_name 필터(분야 내 법 라우팅). 미지정 시 분야 전체 검색(기존 동작).
+    """
     try:
-        return rag.search(query, k=k)
+        return rag.search(query, k=k, law=law)
     except Exception:
         return []
 
