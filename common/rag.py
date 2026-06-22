@@ -4,19 +4,20 @@
 → 분야마다 별도 벡터DB 컬렉션(law_labor 등). 4명이 각자 자기 컬렉션을 독립 구축.
 검색 '기법'은 여기 하나로 통일(고도화도 여기서만) → 4분야 자동 적용.
 
-★ 검색 엔진 승격 완료 — 분야별 검색기법 게이트 ★
-하이브리드 로직은 common/rag_hybrid.py에 '승격 대기'로 분리돼 있던 것을 이 파일로 흡수했다.
-단, 4분야를 일괄 하이브리드로 바꾸지 않고 분야별로 검색기법을 고른다(_HYBRID_DOMAINS):
-  · finance·labor      → 하이브리드(BM25+임베딩) + 분야별 α·쿼리확장 (담당이 합의·튜닝한 분야)
-  · housing·consumer   → 기존 임베딩-only(쿼리확장·BM25 없음) — 동작 불변(미합의 분야 보존)
-새 기법을 쓰려면 _HYBRID_DOMAINS에 분야를 추가한다(해당 담당 합의 후).
+★ 백엔드 선택 (env RAG_BACKEND) ★
+- chroma (기본): 로컬 파일 벡터DB. 공짜·오프라인 — 일상 개발/CI.
+- pgvector: RDS PostgreSQL + pgvector(law_chunks 테이블). "한 DB로 통합" 데모용.
+  같은 silver·같은 임베딩이므로 검색 결과는 동일. DATABASE_URL 필요.
+- 둘 중 무엇도 준비 안 되면 stub 폴백. 명시적으로 pgvector를 골랐는데 연결이
+  안 되면 chroma로 슬쩍 넘어가지 않고 stub으로 떨어진다(오설정을 가리지 않음).
 
-구성:
-  · 하이브리드   = BM25(kiwipiepy)+임베딩 가중결합, 분야별 α, 정의의도 공통처리, synonyms 쿼리확장
-  · 임베딩-only  = 질의 임베딩 → Chroma 최근접(확장 없음). housing/consumer 승격 전 동작 그대로
-  · 폴백: 라이브러리(chromadb/rank_bm25)·컬렉션 없으면 임베딩-only → stub 으로 단계적 폴백
-          → 그래프·CI가 항상 동작. 인덱싱은 pipeline/gold.py 가 담당.
-  (보류) cross-encoder 리랭킹 → 한국어 법령서 성능저하 확인되어 v2로
+★ 검색기법 — 분야별 게이트(_HYBRID_DOMAINS) ★
+하이브리드 로직(common/rag_hybrid.py에 '승격 대기'였던 것)을 이 파일로 흡수했다.
+단 4분야 일괄이 아니라 분야별로 고른다 — 그리고 하이브리드는 chroma 백엔드에서만 동작한다
+(BM25 인덱스를 chroma 컬렉션 문서로 만들기 때문). pgvector/stub은 임베딩-only.
+  · finance·labor      → (chroma) 하이브리드(BM25+임베딩) + 분야별 α·쿼리확장
+  · housing·consumer   → 임베딩-only(쿼리확장·BM25 없음) — 승격 전 동작 그대로(미합의 분야 보존)
+새 분야가 하이브리드를 원하면 _HYBRID_DOMAINS에 추가(담당 합의 후).
 
 검증(검색축만 — Bedrock 불필요):
   .venv/bin/python common/rag.py finance   # finance 평가셋 hit@3/MRR + α 스윕
@@ -45,6 +46,7 @@ from pipeline.config import CHROMA_DIR, EMBED_MODEL  # noqa: E402
 # ── 분야별 검색기법 게이트 ──────────────────────────────────────────
 # 하이브리드(BM25+임베딩+쿼리확장)를 적용할 분야. 나머지(housing/consumer)는 임베딩-only
 # (rag.py 승격 전 동작 그대로). 분야 담당이 합의·튜닝하면 여기에 추가한다.
+# ※ 하이브리드는 chroma 백엔드에서만 — BM25 인덱스를 chroma 컬렉션으로 구축하기 때문.
 _HYBRID_DOMAINS = {"finance", "labor"}
 
 # ── 분야별 튜닝 노브 (하이브리드 분야에서만 사용) ─────────────────────
@@ -55,8 +57,6 @@ _DEFAULT_ALPHA = 0.7
 _ALPHA_BY_DOMAIN = {
     "finance": 0.6,    # benchmark hit@3 우선(α=0.9는 MRR 우세)
     "labor":   0.7,    # 민지 synonyms → hit@3 0.65→0.90
-    "housing": 0.9,    # synonyms 채움 → hit@3 0.875→1.0 (MRR 0.667→0.969)
-    "consumer": 0.9,   # synonyms 채움 → hit@3 0.864→1.0 (MRR 0.712→0.871)
 }
 _MAX_EXPANSION_TERMS = 6  # 너무 많이 붙이면 임베딩 희석 → 상한
 
@@ -141,37 +141,69 @@ def _tokenize_ko(text: str) -> list[str]:
 
 
 class DomainRAG:
-    """한 분야 컬렉션(law_{domain}) 검색기.
+    """한 분야 컬렉션(law_{domain}) 검색기 — 백엔드 선택 + 분야별 검색기법.
 
-    검색기법은 분야별로 갈린다(_HYBRID_DOMAINS):
-      finance·labor → 하이브리드(BM25+임베딩) + 쿼리확장 / housing·consumer → 임베딩-only.
+    백엔드(env RAG_BACKEND): chroma(기본) / pgvector / stub.
+    검색기법(_HYBRID_DOMAINS): finance·labor → (chroma 한정) 하이브리드 / 그 외 → 임베딩-only.
     공개 인터페이스(domain, is_real, search)는 동일 → 에이전트 코드 변경 없이 drop-in."""
 
     def __init__(self, domain: str, corpus_path: str | None = None):
         self.domain = domain
         self.corpus_path = corpus_path or f"data/{domain}"
         self.collection_name = f"law_{domain}"
-        self.collection = None
+        self.collection = None    # chroma
+        self._engine = None       # pgvector (SQLAlchemy engine)
+        self.backend = "stub"     # chroma | pgvector | stub
         self._bm25 = None
         self._bm25_corpus_docs: list[dict] = []
-        # 이 분야가 하이브리드(BM25+쿼리확장)를 쓰는가. 아니면 임베딩-only.
+        # 이 분야가 하이브리드(BM25+쿼리확장)를 쓰는가. (실제 BM25 구축은 chroma일 때만)
         self.hybrid_enabled = domain in _HYBRID_DOMAINS
         # 분야별 α (env HYBRID_ALPHA가 있으면 스윕용으로 우선) — 하이브리드 분야에서만 사용
         self.alpha = float(os.getenv("HYBRID_ALPHA", _ALPHA_BY_DOMAIN.get(domain, _DEFAULT_ALPHA)))
-        try:  # 실제 백엔드 연결 시도 — 실패 시 stub 폴백
+
+        pref = os.getenv("RAG_BACKEND", "chroma").lower()
+        if pref == "pgvector":
+            # 명시적 pgvector 선택 — 안 되면 stub(절대 chroma로 슬쩍 안 넘어감)
+            # pgvector는 임베딩-only(BM25 미적용). 하이브리드는 chroma 경로 전용.
+            if self._try_pgvector():
+                self.backend = "pgvector"
+            return
+
+        try:  # 기본 chroma — 실패 시 stub 폴백
             import chromadb
             client = chromadb.PersistentClient(path=str(CHROMA_DIR))
             col = client.get_or_create_collection(self.collection_name)
             if col.count() > 0:               # 데이터가 있어야 실모드
                 self.collection = col
+                self.backend = "chroma"
                 if self.hybrid_enabled:       # 하이브리드 분야만 BM25 인덱스 구축
                     self._build_bm25_index()  # Chroma 데이터로 BM25 인덱스 구축
         except Exception:
             self.collection = None            # 폴백 (라이브러리 없음/미적재)
 
+    def _try_pgvector(self) -> bool:
+        """DATABASE_URL + law_chunks 테이블에 분야 데이터가 있으면 engine 연결."""
+        db_url = os.getenv("DATABASE_URL", "")
+        if not db_url:
+            return False
+        try:
+            from sqlalchemy import create_engine, text
+            engine = create_engine(db_url, pool_pre_ping=True)
+            with engine.connect() as conn:
+                n = conn.execute(
+                    text("select count(*) from law_chunks where domain = :d"),
+                    {"d": self.domain},
+                ).scalar()
+            if n and n > 0:
+                self._engine = engine
+                return True
+        except Exception:
+            return False
+        return False
+
     @property
     def is_real(self) -> bool:
-        return self.collection is not None
+        return self.backend in ("chroma", "pgvector")
 
     @property
     def has_bm25(self) -> bool:
@@ -195,28 +227,39 @@ class DomainRAG:
         ]
 
     def search(self, query: str, k: int = 3) -> list[RetrievedChunk]:
-        """질의 → 분야별 검색기법 → top-k.
-        finance·labor: 쿼리확장 + 하이브리드(BM25 없으면 확장-임베딩).
-        housing·consumer: 임베딩-only(확장 없음) — 승격 전 동작 그대로."""
-        if not self.is_real:
-            return self._search_stub(k)
-        if not self.hybrid_enabled:              # housing/consumer: 기존 임베딩-only
-            return self._search_embedding_only(query, k)
-        eq = _expand_query(self.domain, query)   # ★finance/labor만 확장 (검색 입력만)
-        if self.has_bm25:
-            return self._search_hybrid(eq, k)
-        return self._search_embedding_only(eq, k)
+        """질의 → (백엔드 → 분야별 검색기법) → top-k.
+        pgvector/stub: 임베딩-only. chroma: finance·labor는 하이브리드+확장,
+        housing·consumer는 임베딩-only(확장 없음, 승격 전 동작)."""
+        if self.backend == "pgvector":
+            return self._search_pgvector(query, k)
+        if self.backend == "chroma":
+            if self.hybrid_enabled:
+                eq = _expand_query(self.domain, query)   # ★finance/labor만 확장(검색 입력만)
+                if self.has_bm25:
+                    return self._search_hybrid(eq, k)
+                return self._search_chroma(eq, k)        # rank_bm25 없을 때: 확장-임베딩
+            return self._search_chroma(query, k)         # housing/consumer: 임베딩-only
+        return self._search_stub(k)
 
-    def _search_embedding_only(self, query: str, k: int) -> list[RetrievedChunk]:
+    # ── chroma 임베딩 검색 ──────────────────────────
+    def _search_chroma(self, query: str, k: int) -> list[RetrievedChunk]:
         emb = _get_model().encode([query]).tolist()
         res = self.collection.query(query_embeddings=emb, n_results=k)
-        out = []
-        for doc, meta, dist in zip(res["documents"][0], res["metadatas"][0], res["distances"][0]):
-            out.append({"law_name": meta["law_name"], "article": meta["article"],
-                        "enforced_date": meta["enforced_date"], "text": doc,
-                        "source_url": meta["source_url"], "score": round(1 - dist, 4)})
-        return out
+        chunks = []
+        for doc, meta, dist in zip(
+            res["documents"][0], res["metadatas"][0], res["distances"][0]
+        ):
+            chunks.append({
+                "law_name": meta["law_name"],
+                "article": meta["article"],
+                "enforced_date": meta["enforced_date"],
+                "text": doc,
+                "source_url": meta["source_url"],
+                "score": round(1 - dist, 4),   # 거리 → 유사도
+            })
+        return chunks
 
+    # ── chroma 하이브리드 검색 (BM25 + 임베딩, finance·labor) ──
     def _search_hybrid(self, query: str, k: int) -> list[RetrievedChunk]:
         fetch_k = k * 3
         # ① 임베딩
@@ -252,13 +295,46 @@ class DomainRAG:
                         "source_url": d["source_url"], "score": round(sc, 4)})
         return out
 
+    # ── pgvector 검색 (RDS PostgreSQL 통합 백엔드, 임베딩-only) ──
+    def _search_pgvector(self, query: str, k: int) -> list[RetrievedChunk]:
+        from sqlalchemy import text
+        emb = _get_model().encode([query])[0].tolist()
+        vec = "[" + ",".join(f"{x:.6f}" for x in emb) + "]"  # pgvector 리터럴
+        sql = text(
+            "select law_name, article, enforced_date, source_url, content, "
+            "  1 - (embedding <=> cast(:vec as vector)) as score "
+            "from law_chunks where domain = :domain "
+            "order by embedding <=> cast(:vec as vector) limit :k"
+        )
+        with self._engine.connect() as conn:
+            rows = conn.execute(
+                sql, {"vec": vec, "domain": self.domain, "k": k}
+            ).fetchall()
+        return [
+            {
+                "law_name": r.law_name,
+                "article": r.article,
+                "enforced_date": r.enforced_date or "",
+                "text": r.content,
+                "source_url": r.source_url or "",
+                "score": round(float(r.score), 4),
+            }
+            for r in rows
+        ]
+
     # ── stub 폴백 (개발 초기·CI) ────────────────────
     def _search_stub(self, k: int) -> list[RetrievedChunk]:
-        return [{"law_name": f"[{self.domain}] stub법", "article": f"제{i + 1}조",
-                 "enforced_date": "2024-01-01",
-                 "text": f"({self.domain}) 사용자는 ...하여야 한다. [조문 원문 stub {i}]",
-                 "source_url": "https://www.law.go.kr/", "score": 0.9 - i * 0.1}
-                for i in range(k)]
+        return [
+            {
+                "law_name": f"[{self.domain}] stub법",
+                "article": f"제{i + 1}조",
+                "enforced_date": "2024-01-01",
+                "text": f"({self.domain}) 사용자는 ...하여야 한다. [조문 원문 stub {i}]",
+                "source_url": "https://www.law.go.kr/",
+                "score": 0.9 - i * 0.1,
+            }
+            for i in range(k)
+        ]
 
     def index(self, docs: list[dict]) -> int:
         """(하위호환) 직접 인덱싱 — 실제 적재는 pipeline/gold.py 사용 권장."""
@@ -298,17 +374,19 @@ def _eval_domain(domain: str):
         print(f"[{domain}] 컬렉션 미적재(0건) — 건너뜀 (chromadb·데이터 필요)")
         return
     h, m, ranks = _score(rag, items)
-    print(f"\n[{domain}] n={len(items)}  hybrid={rag.has_bm25}  α={rag.alpha}")
+    print(f"\n[{domain}] n={len(items)} backend={rag.backend} "
+          f"hybrid={rag.has_bm25} α={rag.alpha}")
     print(f"  hit@3 = {h}   MRR = {m}")
     miss = [f"Q{i + 1}" for i, r in enumerate(ranks) if not r]
     if miss:
         print(f"  miss: {', '.join(miss)}")
-    print("  α 스윕:", end=" ")
-    for a in (0.8, 0.7, 0.6, 0.5, 0.4):
-        rag.alpha = a
-        hh, mm, _ = _score(rag, items)
-        print(f"{a}:{hh}/{mm}", end="  ")
-    print()
+    if rag.has_bm25:
+        print("  α 스윕:", end=" ")
+        for a in (0.8, 0.7, 0.6, 0.5, 0.4):
+            rag.alpha = a
+            hh, mm, _ = _score(rag, items)
+            print(f"{a}:{hh}/{mm}", end="  ")
+        print()
 
 
 if __name__ == "__main__":

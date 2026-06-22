@@ -56,8 +56,8 @@ def update_domain(domain: str, full: bool = False) -> dict:
     all_metas = [m for m in manifest["laws"].values() if m.get("domain") == domain]
     n_chunks = silver.build_silver(domain, all_metas)
 
-    # 5) Gold: 임베딩·적재
-    n_loaded = gold.load_gold(domain)
+    # 5) Gold: 임베딩·적재 (RAG_BACKEND에 따라 chroma/pgvector 자동 선택)
+    n_loaded = gold.load_domain(domain)
 
     # 6) 기록
     detect.save_manifest(manifest)
