@@ -7,6 +7,8 @@ DATABASE_URL이 없으면 engine=None을 돌려준다 → 앱이 죽지 않고 �
 import os
 from functools import lru_cache
 
+_POSTGRES_CONNECT_TIMEOUT_SECONDS = 5
+
 
 def logging_enabled() -> bool:
     """RDS 로깅을 켤지 — 둘 다 충족해야 켜짐(기본 꺼짐, 로컬·CI 안전)."""
@@ -16,11 +18,23 @@ def logging_enabled() -> bool:
     )
 
 
+def _connect_args_for(url: str) -> dict:
+    """DB 드라이버별 연결 옵션. PostgreSQL은 장애 시 상담 응답이 오래 묶이지 않게 제한."""
+    if url.startswith("postgresql"):
+        return {"connect_timeout": _POSTGRES_CONNECT_TIMEOUT_SECONDS}
+    return {}
+
+
 @lru_cache(maxsize=4)
 def _engine_for(url: str):
     """URL당 engine 1개 캐시 — record()가 매 호출마다 풀을 새로 만들지 않게."""
     from sqlalchemy import create_engine
-    return create_engine(url, pool_pre_ping=True, future=True)
+    return create_engine(
+        url,
+        pool_pre_ping=True,
+        future=True,
+        connect_args=_connect_args_for(url),
+    )
 
 
 def get_engine():

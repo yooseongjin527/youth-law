@@ -3,7 +3,7 @@
 핵심 불변식:
   - 마커 없는/맥락 없는 질문은 원문 그대로(LLM 호출 0) → 단발 경로 회귀 0.
   - 재작성 실패는 조용히 원문 폴백 → 상담이 죽지 않음.
-  - 세션은 최근 N턴만 보관(메모리 바운드).
+  - 세션은 최근 N턴 + TTL만 보관(메모리 바운드).
 """
 import sys
 from pathlib import Path
@@ -40,6 +40,46 @@ def test_empty_session_id_is_noop():
     store.append_turn("", "q", "a", ["labor"])
     assert store.get_history("") == []
     assert store.get_history(None) == []
+
+
+def test_session_clear_removes_history():
+    sid = "t-clear"
+    store.clear(sid)
+    store.append_turn(sid, "q", "a", ["labor"])
+    assert store.get_history(sid)
+    store.clear(sid)
+    assert store.get_history(sid) == []
+
+
+def test_session_ttl_prunes_expired(monkeypatch):
+    sid = "t-ttl"
+    store.clear(sid)
+    monkeypatch.setattr(store, "_SESSION_TTL_SECONDS", 10)
+    now = {"t": 100.0}
+    monkeypatch.setattr(store, "_now", lambda: now["t"])
+
+    store.append_turn(sid, "q", "a", ["labor"])
+    assert store.get_history(sid)
+
+    now["t"] = 111.0
+    assert store.get_history(sid) == []
+
+
+def test_api_clear_session_endpoint():
+    from fastapi.testclient import TestClient
+
+    from app.api import app as fastapi_app
+
+    sid = "t-api-clear"
+    store.clear(sid)
+    store.append_turn(sid, "q", "a", ["labor"])
+
+    client = TestClient(fastapi_app)
+    r = client.delete(f"/api/session/{sid}")
+
+    assert r.status_code == 200
+    assert r.json()["cleared"] is True
+    assert store.get_history(sid) == []
 
 
 # ---- contextualize 마커 가드 ----

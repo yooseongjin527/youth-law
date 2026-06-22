@@ -14,8 +14,8 @@
 ## 인프라 (오너 1명 — docs/INFRASTRUCTURE.md)
 - [x] EC2 t3.large + RDS(pgvector/logging) + S3 + systemd 3종 + Nginx/HTTPS 구축 문서화
 - [x] Airflow standalone + law_incremental_update DAG 활성화 절차 코드화
-- [ ] 운영 런북 확정: 배포 전후 health check, RDS 로그 확인, rollback, stop/start 순서
-- [ ] 인프라 재현성 점검: EC2 requirements와 DATABASE_URL 드라이버 표기 일치
+- [ ] 운영 런북 실검증: EC2에서 requirements 설치, init_db, pgvector 검색, health/API, RDS 로그 조회 관통
+- [ ] 인프라 재현성 점검: EC2 requirements와 DATABASE_URL 드라이버 표기 일치 재확인
 
 ## 데이터 파이프라인 (medallion — pipeline/)
 - [x] ~~Day1: LAW_LIST 법령명 확정~~ → 8개 법령 전부 API 조회 성공 (현행 명칭 유효)
@@ -109,5 +109,5 @@
 - [x] ~~서버~~ → **FastAPI 구현됨** (api.py: /api/consult·/api/draft·Jinja 메인화면·/docs)
 - [ ] Day4: 실데이터로 UI 동작 확인 (`uvicorn app.api:app` / `streamlit run app/ui_streamlit.py` / `streamlit run app/ui_dashboard.py`)
 - [ ] Day6: 화면 다듬기 — style.css·문구·로딩 표시 + LangGraph .stream()으로 진행상황 표시(선택)
-- [ ] Day6: 데모 시나리오 4개 리허설 (단일/복수/범위밖/초안)
+- [x] ~~Day6: 데모 시나리오 4개 리허설~~ → `scripts/e2e_smoke.py`로 단일/복수/범위밖/초안 스모크 고정
 - [ ] Day6: 데모 시나리오 준비 (단일/복수/범위밖/문서초안 4케이스) + 발표자료

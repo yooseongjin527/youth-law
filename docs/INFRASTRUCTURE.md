@@ -84,6 +84,7 @@
 
 ## 6. RDS 로깅 (env `ENABLE_RDS_LOGGING`)
 `ENABLE_RDS_LOGGING=true` + `DATABASE_URL` 둘 다 있을 때만 켜짐(기본 off, 미설정/실패 시 no-op — 상담을 절대 안 죽임). 테이블 3종:
+PostgreSQL 연결에는 `connect_timeout=5`를 적용해 RDS 장애·보안그룹 문제 때 상담 응답이 오래 묶이지 않게 한다.
 
 | 테이블 | 적재 지점 | 내용 |
 |---|---|---|
@@ -199,6 +200,26 @@ sudo certbot renew --dry-run        # 자동갱신 시뮬레이션 성공
 배포는 **dev fast-forward → 의존성 동기화 → DB 스키마 확인 → systemd 재시작 → 외부 검증** 순서로 한다.
 작업 전 EC2의 로컬 변경이 있으면 중단하고 원인을 확인한다.
 
+#### 실서버 재현성 검증 기준
+
+외부 URL의 `/health`만 통과해도 Nginx/FastAPI는 살아 있는 것이지만, **실서버 재현성**을
+증명하려면 EC2 SSH 세션에서 아래 항목을 한 번에 관통해야 한다. 이 체크가 통과해야
+문서화한 런북이 실제 서버 상태와 맞는다고 볼 수 있다.
+
+| 단계 | 명령/확인 | 통과 기준 |
+|---|---|---|
+| 코드 동기화 | `git status --short --branch`, `git merge --ff-only origin/dev` | 로컬 변경 없음, dev fast-forward 성공 |
+| EC2 의존성 | `pip install -r requirements-ec2.txt` | `psycopg[binary]`, `sentence-transformers`, `rank-bm25`, `kiwipiepy` 설치 충돌 없음 |
+| RDS 스키마 | `python scripts/init_db.py` | `consultation_logs`, `llm_usage_logs`, `eval_scorecards` 생성/확인 완료 |
+| pgvector 실검색 | `RAG_BACKEND=pgvector python scripts/check_rag.py finance` | `실모드: True`, 조문수 > 0, 검색 결과가 stub 아님 |
+| systemd | `sudo systemctl restart ...`, `status --no-pager` | `youth-law-api`, `youth-law-dashboard` 둘 다 active |
+| 외부 API | `/health`, 대표 `/api/consult`, `scripts/e2e_smoke.py --base-url ...` | health ok, 상담 응답에 domains/answer_blocks/citations 존재, 4케이스 PASS |
+| RDS 로그 | `consultation_logs order by id desc limit 5` | 방금 호출한 대표 상담 질문과 domains가 저장됨 |
+
+로컬 노트북에서 확인할 수 있는 것은 외부 API 스모크까지다. `requirements-ec2.txt`,
+`init_db.py`, `RAG_BACKEND=pgvector`, RDS 로그 조회는 RDS 보안그룹과 EC2 `.env`에
+의존하므로 EC2 내부에서 직접 확인한다.
+
 ```bash
 cd /home/ubuntu/youth_law
 git status --short --branch
@@ -208,7 +229,14 @@ git merge --ff-only origin/dev
 source .venv/bin/activate
 pip install -r requirements-ec2.txt
 
-# RDS 로깅 테이블 멱등 생성/확인. DATABASE_URL이 없는 환경이면 건너뛴다.
+# RDS 로깅 테이블 멱등 생성/확인. EC2 .env에는 DATABASE_URL이 있어야 한다.
+python scripts/init_db.py
+```
+
+로컬 또는 임시 환경에서 같은 절차를 미리 읽어볼 때만 DATABASE_URL이 없으면 건너뛰는
+래퍼를 사용한다.
+
+```bash
 python - <<'PY'
 import os
 from dotenv import load_dotenv
@@ -219,7 +247,11 @@ if not os.getenv("DATABASE_URL"):
 from scripts.init_db import main
 main()
 PY
+```
 
+EC2에서는 이어서 서비스를 재시작한다.
+
+```bash
 sudo systemctl restart youth-law-api youth-law-dashboard
 sudo systemctl status youth-law-api --no-pager
 sudo systemctl status youth-law-dashboard --no-pager
@@ -232,6 +264,13 @@ curl -fsS https://youthlaw-demo.duckdns.org/health
 curl -fsS https://youthlaw-demo.duckdns.org/api/consult \
   -H "Content-Type: application/json" \
   -d '{"question":"전세 보증금을 안 돌려줘요"}'
+```
+
+데모 직전에는 고정 E2E 스모크로 핵심 4케이스(단일 분야/복수 분야/범위 밖/초안)를
+한 번에 확인한다.
+
+```bash
+python scripts/e2e_smoke.py --base-url https://youthlaw-demo.duckdns.org
 ```
 
 pgvector 실검색 배포라면 RAG 백엔드도 직접 확인한다.
@@ -320,6 +359,7 @@ aws ec2 start-instances --instance-ids i-0f0980060f2a4a403 --region us-west-2
 
 ## 13. 자주 밟는 함정 (요약)
 - pgvector: `connect_timeout` 없으면 부팅 행 → 5초 빠른 실패.
+- RDS 로깅: 저장 실패는 no-op이지만 연결 시도는 `connect_timeout=5`로 제한해야 API 응답 지연을 피한다.
 - 드라이버: `postgresql+psycopg://` + `psycopg[binary]`(psycopg3 기준).
 - LangSmith: AWS 엔드포인트 + `LANGSMITH_WORKSPACE_ID` 셋트 아니면 403. `list_runs` limit≤100.
 - typing-extensions ≥4.14.1(airflow↔chromadb 공존).
