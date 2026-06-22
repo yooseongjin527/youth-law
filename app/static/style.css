@@ -366,6 +366,31 @@ main { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 24px; flex: 1 
   border-radius: 50%; font-size: 13px; font-weight: 700;
 }
 .answer .ans-list li:first-child::before { top: 2px; }
+/* 답변 내 마크다운 — 소제목·불릿·코드·표를 날 기호 없이 깔끔하게 */
+.answer .ans-h { font-weight: 700; color: var(--ink); font-size: 15px; margin: 16px 0 7px; }
+.answer .ans-h:first-child { margin-top: 0; }
+.answer .ans-ul { list-style: none; margin: 6px 0; padding: 0; }
+.answer .ans-ul li { position: relative; padding: 4px 0 4px 18px; }
+.answer .ans-ul li::before {
+  content: ""; position: absolute; left: 2px; top: 12px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+}
+.answer code {
+  background: var(--line-2); padding: 1px 6px; border-radius: 6px;
+  font-size: .92em; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+.answer .ans-table {
+  width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px;
+  border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden;
+}
+.answer .ans-table th, .answer .ans-table td {
+  border: 1px solid var(--line); padding: 8px 11px; text-align: left; vertical-align: top;
+}
+.answer .ans-table th { background: var(--line-2); font-weight: 600; color: var(--ink); }
+[data-theme="dark"] .answer code { background: #1e2c44; }
+[data-theme="dark"] .answer .ans-table th { background: #16233c; }
+[data-theme="dark"] .answer .ans-table th,
+[data-theme="dark"] .answer .ans-table td { border-color: #2c4368; }
 
 .section-label {
   display: block; font-size: 12px; font-weight: 700; letter-spacing: .04em;
@@ -608,14 +633,21 @@ footer { border-top: 1px solid var(--line); background: #fff; margin-top: 40px; 
 .turn { animation: turnIn .4s ease both; }
 @keyframes turnIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-/* 사용자 질문 말풍선 (오른쪽 정렬, 브랜드색) */
-.turn-user { display: flex; justify-content: flex-end; margin: 24px 0 4px; }
+/* 사용자 질문 말풍선 (오른쪽 정렬, 브랜드색) — 클릭 시 답변 접기/펼치기 */
+.turn-user { display: flex; justify-content: flex-end; margin: 24px 0 4px; cursor: pointer; }
 .bubble-q {
   max-width: 80%; background: var(--brand); color: #fff;
   padding: 11px 16px; border-radius: 16px 16px 4px 16px;
   font-size: 15px; line-height: 1.55; box-shadow: var(--sh-sm);
   white-space: pre-wrap; word-break: break-word;
+  display: inline-flex; align-items: flex-end; gap: 8px;
+  transition: filter .14s ease;
 }
+.turn-user:hover .bubble-q { filter: brightness(1.06); }
+.bubble-toggle { flex-shrink: 0; line-height: 0; opacity: .85; transition: transform .22s ease; }
+.bubble-toggle svg { width: 15px; height: 15px; }
+.turn-user.collapsed .bubble-toggle { transform: rotate(-90deg); }
+.turn-assistant.collapsed { display: none; }
 [data-theme="dark"] .bubble-q { background: var(--brand-d); }
 
 /* 후속질문 재작성 안내 — 멀티턴 동작을 보여주는 신뢰 포인트 */

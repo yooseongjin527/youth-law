@@ -182,12 +182,27 @@ function resetThread() {
   _sessionId = null; _turnSeq = 0;
   document.getElementById("q").focus();
 }
-function appendUserTurn(q) {
+function appendUserTurn(q, turnIdx) {
   const div = document.createElement("div");
   div.className = "turn turn-user";
-  div.innerHTML = `<div class="bubble-q">${escapeHtml(q)}</div>`;
+  div.dataset.turn = turnIdx;
+  div.setAttribute("role", "button");
+  div.title = "눌러서 답변 접기/펼치기";
+  div.onclick = () => toggleTurn(turnIdx);
+  div.innerHTML = `<div class="bubble-q">${escapeHtml(q)}` +
+    `<span class="bubble-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ` +
+    `stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>` +
+    `</span></div>`;
   document.getElementById("cards").appendChild(div);
   div.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+// 질문 말풍선 클릭 → 해당 턴 답변 카드 접기/펼치기 (긴 스레드 정리)
+function toggleTurn(turnIdx) {
+  const a = document.querySelector(`.turn-assistant[data-turn="${turnIdx}"]`);
+  const u = document.querySelector(`.turn-user[data-turn="${turnIdx}"]`);
+  if (!a) return;
+  const collapsed = a.classList.toggle("collapsed");
+  if (u) u.classList.toggle("collapsed", collapsed);
 }
 function appendThinking() {
   const div = document.createElement("div");
@@ -247,7 +262,7 @@ async function consult() {
   if (!_sessionId) newSession();              // 첫 턴에 세션 시작
   const turnIdx = ++_turnSeq;
   input.value = "";
-  appendUserTurn(q);                          // 사용자 질문 말풍선(스레드에 누적)
+  appendUserTurn(q, turnIdx);                 // 사용자 질문 말풍선(스레드에 누적)
   const thinking = appendThinking();          // 로딩 스텝퍼를 스레드 하단에
   startStepper(thinking.querySelector(".thinking-step"));
   document.getElementById("askmeta").classList.remove("hidden");
@@ -309,8 +324,11 @@ function escapeHtml(s) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 }
 
-function inlineMd(s) {                         // **굵게** → <strong>
-  return s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+// 인라인 마크다운: **굵게** · `코드`. 그 외 잔여 마크다운 기호는 정리.
+function inlineMd(s) {
+  return s
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>");
 }
 
 // 한국어 종결어미(다./요./죠.) 뒤에서 문장 분리 → 문장별 <p> (꼬리 누락 없음)
@@ -320,19 +338,85 @@ function toParagraphs(s) {
     .map(x => `<p>${inlineMd(x)}</p>`).join("");
 }
 
-// LLM 답변 가독성: 번호 목록은 <ol>로, 그 외엔 문장 단위로 줄바꿈
-function formatAnswer(text) {
-  const t = escapeHtml(text).trim();
-  const listMatches = t.match(/(^|\s)\d+\.\s/g) || [];
-  if (listMatches.length >= 2) {              // " 1. … 2. …" 형태 → 번호 목록
-    const firstIdx = t.search(/(^|\s)\d+\.\s/);
-    const intro = t.slice(0, firstIdx).trim();
-    const items = t.slice(firstIdx).split(/\s*\d+\.\s+/).filter(x => x.trim());
-    return (intro ? toParagraphs(intro) : "") +
-      "<ol class='ans-list'>" +
-      items.map(it => `<li>${inlineMd(it.trim())}</li>`).join("") + "</ol>";
+// 마크다운 표 → 깔끔한 <table> (구분행 |---| 은 건너뜀)
+function mdTable(rows) {
+  if (!rows.length) return "";
+  const cells = r => r.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+  const head = cells(rows[0]);
+  const body = rows.slice(1).map(cells);
+  let h = "<table class='ans-table'><thead><tr>" +
+    head.map(c => `<th>${inlineMd(c)}</th>`).join("") + "</tr></thead>";
+  if (body.length) {
+    h += "<tbody>" + body.map(r =>
+      "<tr>" + r.map(c => `<td>${inlineMd(c)}</td>`).join("") + "</tr>").join("") + "</tbody>";
   }
-  return toParagraphs(t) || `<p>${inlineMd(t)}</p>`;
+  return h + "</table>";
+}
+
+// LLM 답변 가독성: 마크다운(## 제목·표·목록)을 날 기호 없이 깔끔한 HTML로 렌더.
+function formatAnswer(text) {
+  const t = escapeHtml(text).replace(/\r/g, "").trim();
+  const isTbl = l => /^\s*\|.*\|\s*$/.test(l);
+  const isSep = l => /^\s*\|?[\s:|-]+\|?\s*$/.test(l) && l.includes("-");
+  const isHr = l => /^\s*([-*_])\1{2,}\s*$/.test(l);
+  const isItem = l => /^\s*(#{1,6}\s|[-*+]\s|\d+\.\s)/.test(l);
+
+  // 줄바꿈 없는 한 덩어리 + 인라인 번호목록(" 1. … 2. …")은 줄로 분해
+  if (!t.includes("\n")) {
+    const m = t.match(/(^|\s)\d+\.\s/g) || [];
+    if (m.length >= 2) {
+      const i = t.search(/(^|\s)\d+\.\s/);
+      const intro = t.slice(0, i).trim();
+      const items = t.slice(i).split(/\s*\d+\.\s+/).filter(x => x.trim());
+      return (intro ? toParagraphs(intro) : "") + "<ol class='ans-list'>" +
+        items.map(x => `<li>${inlineMd(x.trim())}</li>`).join("") + "</ol>";
+    }
+    return toParagraphs(t) || `<p>${inlineMd(t)}</p>`;
+  }
+
+  const lines = t.split("\n");
+  let html = "", i = 0;
+  while (i < lines.length) {
+    const l = lines[i];
+    if (!l.trim()) { i++; continue; }
+    const h = l.match(/^\s*#{1,6}\s+(.*)$/);
+    if (h) { html += `<div class="ans-h">${inlineMd(h[1].trim())}</div>`; i++; continue; }
+    if (isHr(l)) { i++; continue; }
+    if (isTbl(l)) {
+      const rows = [];
+      while (i < lines.length && isTbl(lines[i])) {
+        if (!isSep(lines[i])) rows.push(lines[i]);
+        i++;
+      }
+      html += mdTable(rows); continue;
+    }
+    if (/^\s*[-*+]\s+/.test(l)) {
+      const items = [];
+      while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^\s*[-*+]\s+/, "")); i++;
+      }
+      html += "<ul class='ans-ul'>" +
+        items.map(x => `<li>${inlineMd(x.trim())}</li>`).join("") + "</ul>";
+      continue;
+    }
+    if (/^\s*\d+\.\s+/.test(l)) {
+      const items = [];
+      while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^\s*\d+\.\s+/, "")); i++;
+      }
+      html += "<ol class='ans-list'>" +
+        items.map(x => `<li>${inlineMd(x.trim())}</li>`).join("") + "</ol>";
+      continue;
+    }
+    // 일반 문단: 연속 텍스트 줄을 모아 문장 단위로
+    const buf = [];
+    while (i < lines.length && lines[i].trim() && !isTbl(lines[i]) && !isHr(lines[i]) &&
+           !isItem(lines[i])) {
+      buf.push(lines[i].trim()); i++;
+    }
+    html += toParagraphs(buf.join(" "));
+  }
+  return html || toParagraphs(t);
 }
 
 // 조문 원문 가독성: 항(①)·호(1.)·목(가.) 계층으로 분리해 들여쓰기
@@ -353,6 +437,7 @@ function formatSnippet(text) {
 function renderTurn(data, turnIdx, q) {
   const wrap = document.createElement("div");
   wrap.className = "turn turn-assistant";
+  wrap.dataset.turn = turnIdx;
   // 문서초안은 재작성된(맥락 포함) 질문 기준으로 — 후속질문이면 단독으론 부족하므로
   const dq = data.rewritten_question || q;
 
