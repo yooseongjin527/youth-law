@@ -189,10 +189,11 @@ function appendUserTurn(q, turnIdx) {
   div.setAttribute("role", "button");
   div.title = "눌러서 답변 접기/펼치기";
   div.onclick = () => toggleTurn(turnIdx);
-  div.innerHTML = `<div class="bubble-q">${escapeHtml(q)}` +
-    `<span class="bubble-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ` +
-    `stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>` +
-    `</span></div>`;
+  div.innerHTML =
+    `<button class="turn-toggle" type="button" tabindex="-1" aria-label="답변 접기/펼치기">` +
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" ` +
+    `stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>` +
+    `<div class="bubble-q">${escapeHtml(q)}</div>`;
   document.getElementById("cards").appendChild(div);
   div.scrollIntoView({ behavior: "smooth", block: "start" });
 }
