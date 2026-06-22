@@ -9,8 +9,9 @@ EC2의 Airflow에 이 폴더(airflow/dags)를 dags_folder로 잡으면 인식됨
 """
 from datetime import datetime, timedelta
 
-from airflow import DAG
 from airflow.operators.python import PythonOperator
+
+from airflow import DAG
 
 # 프로젝트 루트가 PYTHONPATH에 있어야 함 (INFRA.md의 env 설정 참조)
 from pipeline.config import LAW_LIST

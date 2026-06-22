@@ -11,7 +11,7 @@ import json
 import sys
 import xml.etree.ElementTree as ET
 
-from pipeline.config import BRONZE_DIR, SILVER_DIR
+from pipeline.config import SILVER_DIR
 
 # 기관 API의 태그명 후보 (버전에 따라 다를 수 있어 복수 대응)
 _CANDIDATES = {

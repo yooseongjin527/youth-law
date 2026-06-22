@@ -34,7 +34,8 @@ def save_consultation(payload: dict) -> bool:
             conn.execute(
                 text(
                     "insert into consultation_logs "
-                    "(question, domains, in_scope, final_answer, answer_blocks, verification_report) "
+                    "(question, domains, in_scope, final_answer, "
+                    "answer_blocks, verification_report) "
                     "values (:q, :domains, :in_scope, :final, "
                     "cast(:blocks as jsonb), cast(:vr as jsonb))"
                 ),
