@@ -602,3 +602,46 @@ footer { border-top: 1px solid var(--line); background: #fff; margin-top: 40px; 
 [data-theme="dark"] .law-ho { color: #aebccf; }
 [data-theme="dark"] .btn-outline { background: #281d16; color: #f4a98e; border-color: #5b3a2c; }
 [data-theme="dark"] .btn-outline:hover { background: #33271d; border-color: var(--accent); color: #f9c3ac; }
+
+/* ── 멀티턴 상담 스레드 ─────────────────────────────────── */
+.thread { display: flex; flex-direction: column; }
+.turn { animation: turnIn .4s ease both; }
+@keyframes turnIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* 사용자 질문 말풍선 (오른쪽 정렬, 브랜드색) */
+.turn-user { display: flex; justify-content: flex-end; margin: 24px 0 4px; }
+.bubble-q {
+  max-width: 80%; background: var(--brand); color: #fff;
+  padding: 11px 16px; border-radius: 16px 16px 4px 16px;
+  font-size: 15px; line-height: 1.55; box-shadow: var(--sh-sm);
+  white-space: pre-wrap; word-break: break-word;
+}
+[data-theme="dark"] .bubble-q { background: var(--brand-d); }
+
+/* 후속질문 재작성 안내 — 멀티턴 동작을 보여주는 신뢰 포인트 */
+.rewrite-hint {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; color: var(--muted); margin: 6px 2px 12px; line-height: 1.5;
+}
+.rewrite-hint svg { width: 15px; height: 15px; color: var(--accent); flex-shrink: 0; }
+.rewrite-hint b { color: var(--ink); font-weight: 600; }
+
+/* 턴별 분야 태그 (전역 #tags 대체) */
+.turn-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 2px 0 2px; }
+
+.thinking { padding: 16px 4px; }
+.turn-error { color: var(--accent-d); font-size: 14px; }
+
+/* 입력창 아래 후속질문 안내 + 새 상담 리셋 */
+.ask-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin: 10px 2px 2px; flex-wrap: wrap;
+}
+.followup-note { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+.followup-note svg { width: 15px; height: 15px; flex-shrink: 0; }
+.reset-link {
+  background: none; border: 0; color: var(--brand-d);
+  font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: var(--r-sm);
+}
+.reset-link:hover { background: var(--line-2); }
+[data-theme="dark"] .reset-link:hover { background: #1e2c44; }
