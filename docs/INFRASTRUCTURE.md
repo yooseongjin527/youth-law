@@ -194,6 +194,109 @@ sudo certbot renew --dry-run        # 자동갱신 시뮬레이션 성공
 - 배포 방식은 **수동 배포**(CI/CD 자동 배포는 스트레치).
 - ⚠️ Ubuntu 24.04엔 python3.11 없음 → **deadsnakes PPA**.
 
+### 10-1. 운영 런북 (수동 배포·검증·복구)
+
+배포는 **dev fast-forward → 의존성 동기화 → DB 스키마 확인 → systemd 재시작 → 외부 검증** 순서로 한다.
+작업 전 EC2의 로컬 변경이 있으면 중단하고 원인을 확인한다.
+
+```bash
+cd /home/ubuntu/youth_law
+git status --short --branch
+git fetch --prune origin
+git merge --ff-only origin/dev
+
+source .venv/bin/activate
+pip install -r requirements-ec2.txt
+
+# RDS 로깅 테이블 멱등 생성/확인. DATABASE_URL이 없는 환경이면 건너뛴다.
+python - <<'PY'
+import os
+from dotenv import load_dotenv
+load_dotenv(".env")
+if not os.getenv("DATABASE_URL"):
+    print("DATABASE_URL 없음: init_db 생략")
+    raise SystemExit(0)
+from scripts.init_db import main
+main()
+PY
+
+sudo systemctl restart youth-law-api youth-law-dashboard
+sudo systemctl status youth-law-api --no-pager
+sudo systemctl status youth-law-dashboard --no-pager
+```
+
+배포 후 외부에서 최소 2가지를 확인한다.
+
+```bash
+curl -fsS https://youthlaw-demo.duckdns.org/health
+curl -fsS https://youthlaw-demo.duckdns.org/api/consult \
+  -H "Content-Type: application/json" \
+  -d '{"question":"전세 보증금을 안 돌려줘요"}'
+```
+
+pgvector 실검색 배포라면 RAG 백엔드도 직접 확인한다.
+
+```bash
+cd /home/ubuntu/youth_law
+source .venv/bin/activate
+RAG_BACKEND=pgvector python scripts/check_rag.py finance
+```
+
+RDS 로깅을 켠 배포라면 EC2에서 최근 상담 로그도 확인한다.
+
+```bash
+cd /home/ubuntu/youth_law
+source .venv/bin/activate
+python - <<'PY'
+from dotenv import load_dotenv
+load_dotenv(".env")
+from sqlalchemy import text
+from common.db import get_engine
+
+engine = get_engine()
+if engine is None:
+    print("DATABASE_URL 없음: RDS 로그 확인 생략")
+    raise SystemExit(0)
+with engine.connect() as conn:
+    rows = conn.execute(text(
+        "select id, created_at, question, domains "
+        "from consultation_logs order by id desc limit 5"
+    )).fetchall()
+for row in rows:
+    print(row)
+PY
+```
+
+문제가 있으면 최근 정상 커밋으로 임시 복구한다. 이 방식은 detached HEAD 복구라,
+원인 수정 후에는 다시 `dev`로 돌아와 정상 PR/커밋으로 수습한다.
+
+```bash
+cd /home/ubuntu/youth_law
+git log --oneline -5
+git switch --detach <LAST_GOOD_COMMIT>
+source .venv/bin/activate
+pip install -r requirements-ec2.txt
+sudo systemctl restart youth-law-api youth-law-dashboard
+curl -fsS https://youthlaw-demo.duckdns.org/health
+
+# 원인 수정이 dev에 반영된 뒤 정상 상태 복귀
+git switch dev
+git pull --ff-only origin dev
+sudo systemctl restart youth-law-api youth-law-dashboard
+```
+
+비용 절감을 위해 서비스를 멈출 때는 **EC2/RDS 둘 다 stop**하고, 다시 켤 때는
+**RDS available 확인 → EC2 start → systemd/health 확인** 순서로 한다.
+
+```bash
+aws rds stop-db-instance --db-instance-identifier youth-law-postgres --region us-west-2
+aws ec2 stop-instances --instance-ids i-0f0980060f2a4a403 --region us-west-2
+
+aws rds start-db-instance --db-instance-identifier youth-law-postgres --region us-west-2
+aws rds wait db-instance-available --db-instance-identifier youth-law-postgres --region us-west-2
+aws ec2 start-instances --instance-ids i-0f0980060f2a4a403 --region us-west-2
+```
+
 ## 11. 보안 (SecurityGroup `sg-046b56d0ab276bae0`)
 | 포트 | 용도 | 소스 |
 |---|---|---|
