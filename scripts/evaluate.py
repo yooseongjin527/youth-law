@@ -37,6 +37,7 @@ from agents.housing import housing_agent  # noqa: E402
 from agents.labor import labor_agent  # noqa: E402
 from agents.verifier import verifier_agent  # noqa: E402
 from common.cost import tracker  # noqa: E402
+from common.logging_store import save_eval_scorecard  # noqa: E402
 from state import DOMAINS  # noqa: E402
 
 _AGENTS = {
@@ -220,6 +221,7 @@ def run(domain: str, split: str = "smoke", include_grounding: bool = True) -> di
     )
     with open(out_dir / history_name, "a") as f:
         f.write(json.dumps(result, ensure_ascii=False) + "\n")
+    save_eval_scorecard(result)  # RDS 로깅(꺼져 있으면 no-op)
     return result
 
 

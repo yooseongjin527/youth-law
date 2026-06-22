@@ -6,6 +6,14 @@ data/
 .venv/
 venv/
 chroma_db/
+
+# Terraform (상태/비밀값/플러그인 캐시 — 커밋 금지)
+infra/terraform/terraform.tfvars
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.backup
+infra/terraform/.terraform/
+infra/terraform/.terraform.lock.hcl
+
 # 개인 계층 (CLAUDE.local.md.example 복사해서 사용)
 CLAUDE.local.md
 to-do summary.md
