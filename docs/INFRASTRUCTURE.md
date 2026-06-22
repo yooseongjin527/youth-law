@@ -60,7 +60,7 @@
 
 - 실검색 검증(stub 아님): `DomainRAG(RAG_BACKEND=pgvector).backend == "pgvector"`, `is_real == True`.
   예) "전세 보증금을 안 돌려줘요" → 주택임대차보호법 제10조의2(0.51)/제6조의3/제4조.
-- ⚠️ **드라이버는 psycopg2**: `postgresql+psycopg2://…`. (Airflow가 SQLAlchemy 1.4 고정이라 psycopg3 다이얼렉트 없음 → 동거 venv에서 psycopg2 필수.)
+- ⚠️ **드라이버는 psycopg3**: `postgresql+psycopg://…`. EC2 앱 venv는 `requirements-ec2.txt`의 `psycopg[binary]`를 설치한다. Airflow는 격리 venv에서 돌며, DAG가 앱 코드를 import할 때도 같은 URL 형식을 사용한다.
 
 ### S3
 - 버킷 `youth-law-artifacts-363de80c` — `data/`·평가결과 산출물 백업/공유(`scripts/sync_data.py`, `ENABLE_S3_SYNC`).
@@ -217,7 +217,7 @@ sudo certbot renew --dry-run        # 자동갱신 시뮬레이션 성공
 
 ## 13. 자주 밟는 함정 (요약)
 - pgvector: `connect_timeout` 없으면 부팅 행 → 5초 빠른 실패.
-- 드라이버: `postgresql+psycopg2://`(psycopg3 아님 — airflow SQLAlchemy 1.4).
+- 드라이버: `postgresql+psycopg://` + `psycopg[binary]`(psycopg3 기준).
 - LangSmith: AWS 엔드포인트 + `LANGSMITH_WORKSPACE_ID` 셋트 아니면 403. `list_runs` limit≤100.
 - typing-extensions ≥4.14.1(airflow↔chromadb 공존).
 - Ubuntu 24.04: python3.11은 deadsnakes.
