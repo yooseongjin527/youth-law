@@ -153,13 +153,50 @@
            placeholder="어떤 상황인지 편하게 적어주세요. 예: 알바비를 못 받았어요">
     <button id="go" onclick="consult()">상담</button>
   </div>
+  <div class="ask-meta hidden" id="askmeta">
+    <span class="followup-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      답변에 이어서 더 물어볼 수 있어요 (예: “그건 며칠 안에 가능해?”)
+    </span>
+    <button class="reset-link" type="button" onclick="resetThread()">＋ 새 상담</button>
+  </div>
 
   <div id="status" class="hidden"></div>
   <div id="tags" class="hidden"></div>
-  <div id="cards"></div>
+  <div id="cards" class="thread"></div>
 </section>
 
 <script>
+// ── 멀티턴 상담 세션 상태 ───────────────────────────────
+// session_id가 있으면 서버가 직전 대화로 후속질문을 재작성한다(app/contextualize.py).
+let _sessionId = null;
+let _turnSeq = 0;
+
+function newSession() {
+  _sessionId = "s-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  _turnSeq = 0;
+}
+function resetThread() {
+  document.getElementById("cards").innerHTML = "";
+  document.getElementById("askmeta").classList.add("hidden");
+  _sessionId = null; _turnSeq = 0;
+  document.getElementById("q").focus();
+}
+function appendUserTurn(q) {
+  const div = document.createElement("div");
+  div.className = "turn turn-user";
+  div.innerHTML = `<div class="bubble-q">${escapeHtml(q)}</div>`;
+  document.getElementById("cards").appendChild(div);
+  div.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function appendThinking() {
+  const div = document.createElement("div");
+  div.className = "turn turn-thinking";
+  div.innerHTML = `<div class="thinking"><span class="thinking-step"></span></div>`;
+  document.getElementById("cards").appendChild(div);
+  return div;
+}
+
 function startConsult() {
   document.getElementById("landing").classList.add("hidden");
   document.getElementById("consult").classList.remove("hidden");
@@ -198,30 +235,43 @@ function backToLanding() {
   document.getElementById("landing").classList.remove("hidden");
   document.getElementById("cards").innerHTML = "";
   document.getElementById("tags").classList.add("hidden");
+  document.getElementById("askmeta").classList.add("hidden");
+  _sessionId = null; _turnSeq = 0;
   setStatus("");
 }
 
 async function consult() {
-  const q = document.getElementById("q").value.trim();
+  const input = document.getElementById("q");
+  const q = input.value.trim();
   if (q.length < 2) return alert("질문을 입력해주세요");
-  startStepper();
-  document.getElementById("cards").innerHTML = "";
+  if (!_sessionId) newSession();              // 첫 턴에 세션 시작
+  const turnIdx = ++_turnSeq;
+  input.value = "";
+  appendUserTurn(q);                          // 사용자 질문 말풍선(스레드에 누적)
+  const thinking = appendThinking();          // 로딩 스텝퍼를 스레드 하단에
+  startStepper(thinking.querySelector(".thinking-step"));
+  document.getElementById("askmeta").classList.remove("hidden");
   try {
     const res = await fetch("/api/consult", {
       method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({question: q}),
+      body: JSON.stringify({question: q, session_id: _sessionId}),
     });
-    render(await res.json(), q);
-  } catch (e) { stopStepper(); setStatus("오류가 발생했습니다: " + e); }
+    const data = await res.json();
+    stopStepper();
+    thinking.remove();
+    renderTurn(data, turnIdx, q);
+  } catch (e) {
+    stopStepper();
+    thinking.querySelector(".thinking-step").innerHTML =
+      `<span class="turn-error">오류가 발생했습니다: ${escapeHtml(String(e))}</span>`;
+  }
 }
 
 // 로딩 3단계 스텝퍼 — 실제 단계 진행을 알 수 없어 시간차로 자연스럽게 전진
 const STEPS = ["분야 분석", "법령 검색", "답변 생성"];
 let _stepTimer = null;
-function renderStepper(active) {
-  const el = document.getElementById("status");
-  el.classList.remove("hidden");
-  el.innerHTML = '<div class="stepper">' + STEPS.map((s, i) => {
+function stepperHtml(active) {
+  return '<div class="stepper">' + STEPS.map((s, i) => {
     const state = i < active ? "done" : (i === active ? "active" : "pending");
     const ic = state === "done"
       ? '<span class="step-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>'
@@ -232,14 +282,14 @@ function renderStepper(active) {
       `<span class="step-item ${state}">${ic}${s}</span>`;
   }).join("") + "</div>";
 }
-function startStepper() {
+function startStepper(el) {
   let i = 0;
-  renderStepper(0);
+  el.innerHTML = stepperHtml(0);
   clearInterval(_stepTimer);
   _stepTimer = setInterval(() => {
     i += 1;
-    if (i >= STEPS.length - 1) { renderStepper(STEPS.length - 1); clearInterval(_stepTimer); }
-    else { renderStepper(i); }
+    if (i >= STEPS.length - 1) { el.innerHTML = stepperHtml(STEPS.length - 1); clearInterval(_stepTimer); }
+    else { el.innerHTML = stepperHtml(i); }
   }, 850);
 }
 function stopStepper() { clearInterval(_stepTimer); }
@@ -300,21 +350,35 @@ function formatSnippet(text) {
   }).join("");
 }
 
-function render(data, q) {
-  stopStepper();
-  setStatus("");
-  const tags = document.getElementById("tags");
+function renderTurn(data, turnIdx, q) {
+  const wrap = document.createElement("div");
+  wrap.className = "turn turn-assistant";
+  // 문서초안은 재작성된(맥락 포함) 질문 기준으로 — 후속질문이면 단독으론 부족하므로
+  const dq = data.rewritten_question || q;
+
+  // 후속질문 재작성 안내 — 멀티턴이 동작했음을 보여주는 신뢰 포인트
+  let head = "";
+  if (data.rewritten_question) {
+    head += `<div class="rewrite-hint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 019-9 9 9 0 016.7 3L21 8"/><path d="M21 3v5h-5"/></svg>
+      이어진 질문으로 이해했어요 — <b>${escapeHtml(data.rewritten_question)}</b></div>`;
+  }
+
   if (!data.in_scope) {
-    tags.classList.add("hidden");
-    document.getElementById("cards").innerHTML =
+    wrap.innerHTML = head +
       `<div class="card out"><div class="out-ic">!</div><p>${escapeHtml(data.final_answer)}</p></div>`;
+    document.getElementById("cards").appendChild(wrap);
+    wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
     return;
   }
-  tags.classList.remove("hidden");
-  tags.innerHTML = `<span class="tags-label">분석된 분야</span>` +
-    data.domains.map(d => `<span class="tag"><span class="dot"></span>${d.name}</span>`).join("");
 
-  document.getElementById("cards").innerHTML = data.answer_blocks.map(b => `
+  head += `<div class="turn-tags"><span class="tags-label">분석된 분야</span>` +
+    data.domains.map(d => `<span class="tag"><span class="dot"></span>${d.name}</span>`).join("") +
+    `</div>`;
+
+  wrap.innerHTML = head + data.answer_blocks.map((b, bi) => {
+    const key = `${turnIdx}-${bi}-${b.domain}`;
+    return `
     <article class="card">
       <header class="card-head">
         <span class="card-domain">${b.domain_kr}</span>
@@ -373,23 +437,27 @@ function render(data, q) {
         </div>
       </section>
 
-      <button class="btn btn-outline" onclick="makeDraft('${b.domain}', ${JSON.stringify(q).replace(/"/g, "&quot;")})">
+      <button class="btn btn-outline" onclick="makeDraft('${key}', '${b.domain}', ${JSON.stringify(dq).replace(/"/g, "&quot;")})">
         <svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M14 3v5h5M9 13h6M9 16h4"/></svg>
         ${b.domain_kr} 문서 초안 생성</button>
-      <div class="draft-doc hidden" id="draftdoc-${b.domain}">
+      <div class="draft-doc hidden" id="draftdoc-${key}">
         <div class="draft-doc-head">
           <span class="draft-doc-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M14 3v5h5M9 13h6M9 16h4"/></svg>
             문서 초안
           </span>
-          <button class="copy-btn" type="button" onclick="copyDraft('${b.domain}')">
+          <button class="copy-btn" type="button" onclick="copyDraft('${key}')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>복사
           </button>
         </div>
-        <pre class="draft-doc-body" id="draft-${b.domain}"></pre>
+        <pre class="draft-doc-body" id="draft-${key}"></pre>
       </div>
-    </article>`).join("");
-  revealAnswers();
+    </article>`;
+  }).join("");
+
+  document.getElementById("cards").appendChild(wrap);
+  revealAnswers(wrap);
+  wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function fmtDate(s) {
@@ -397,9 +465,9 @@ function fmtDate(s) {
   return s;
 }
 
-async function makeDraft(domain, q) {
-  const out = document.getElementById("draft-" + domain);
-  document.getElementById("draftdoc-" + domain).classList.remove("hidden");
+async function makeDraft(key, domain, q) {
+  const out = document.getElementById("draft-" + key);
+  document.getElementById("draftdoc-" + key).classList.remove("hidden");
   out.textContent = "초안 작성 중...";
   const res = await fetch("/api/draft", {
     method: "POST", headers: {"Content-Type": "application/json"},
@@ -436,8 +504,8 @@ function copyAnswer(btn) {
   const a = btn.closest(".card-section").querySelector(".answer");
   if (a) copyText(a.innerText.trim());
 }
-function copyDraft(domain) {
-  const p = document.getElementById("draft-" + domain);
+function copyDraft(key) {
+  const p = document.getElementById("draft-" + key);
   if (p) copyText(p.textContent.trim());
 }
 
@@ -466,9 +534,9 @@ function typewriteElement(el, done) {
     setTimeout(step, 22);
   })();
 }
-function revealAnswers() {
+function revealAnswers(root) {
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  document.querySelectorAll("#cards .card").forEach(card => {
+  (root || document).querySelectorAll(".card").forEach(card => {
     const answer = card.querySelector(".answer");
     if (!answer || reduce) return;
     const later = [...card.querySelectorAll(".card-section")].slice(1);
