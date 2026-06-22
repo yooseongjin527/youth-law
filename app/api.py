@@ -53,7 +53,7 @@ def index(request: Request):
 
 @app.post("/api/consult", response_model=ConsultResponse)
 def consult(req: ConsultRequest):
-    return service.consult(req.question)
+    return service.consult(req.question, req.session_id)
 
 
 @app.post("/api/draft", response_model=DraftResponse)
