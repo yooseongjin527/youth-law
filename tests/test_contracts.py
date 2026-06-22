@@ -207,31 +207,11 @@ def test_cost_tracker():
     assert r["by_task"]["classify"]["calls"] == 1
 
 
-def test_eval_retrieval_runs():
-    """평가 축: hit@k 측정이 평가셋으로 실행됨 (stub이라 값은 낮아도 OK)."""
-    from scripts.evaluate import eval_retrieval
-
-    r = eval_retrieval("labor")
-    assert r["n"] >= 3                  # 평가셋 존재
-    assert r["hit_at_k"] is not None    # 측정 자체가 동작
-
-
-def test_eval_grounding_runs(monkeypatch):
-    """환각 축: grounding rate 측정이 실행됨. live Bedrock 없이 결정적으로 검증."""
-    import agents.verifier as verifier
-    import common.base_agent_answer as base_agent
-    from scripts.evaluate import eval_grounding
-
-    monkeypatch.setattr(
-        base_agent,
-        "call_bedrock",
-        lambda *a, **k: "근로기준법 제43조에 따라 임금은 정해진 날짜에 지급해야 합니다.",
-    )
-    monkeypatch.setattr(verifier, "call_bedrock_json", lambda *a, **k: {"ungrounded": []})
-
-    r = eval_grounding("labor")
-    assert r["n"] >= 3
-    assert 0.0 <= r["grounding_rate"] <= 1.0
+# 평가(eval) 스모크는 tests/test_eval_smoke.py 로 분리했다.
+# 이유: hit@k·grounding rate '실측'은 라이브 LLM·전체 평가셋이 필요해 비싸고(분 단위)
+#   비결정적이라, 계약(I/O 구조) 게이트에 두면 평가셋·분야가 늘수록 CI가 폭발한다
+#   (eval_grounding은 분야당 문항수 × LLM 2회 호출). → 실측은 scripts/evaluate.py
+#   (온디맨드), CI 스모크는 Bedrock mock으로 가볍게(무네트워크·결정적).
 
 
 def test_diff_laws_incremental():
