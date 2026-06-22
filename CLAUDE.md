@@ -147,3 +147,4 @@ tests/test_contracts.py
 - ❌ Chroma 컬렉션 기본 거리(L2)로 생성 → ✅ `hnsw:space=cosine` (문장 임베딩은 코사인; L2는 비정규화 벡터에서 score=1-dist가 음수 쓰레기값)
 - ❌ (Windows) 스크립트 콘솔 인코딩 방치 → ✅ `PYTHONUTF8=1` (cp949에서 ✓ 등 출력 시 크래시)
 - ❌ os.getenv 쓰면서 .env 로드 안 함 → ✅ 진입점(config.py)에서 load_dotenv 1회
+- ❌ 줄길이를 글자수(len)로만 점검 → ✅ push 전 `ruff check .` (E501은 한글을 폭 2로 계산 — CI test job이 pytest 전에 ruff 실행)
