@@ -13,7 +13,7 @@ python -m venv .venv ; .\.venv\Scripts\Activate.ps1
 
 # 의존성
 pip install -r requirements.txt
-pip install chromadb sentence-transformers   # 무거워서 따로 (검색/빌드에 필요)
+pip install chromadb sentence-transformers rank-bm25 kiwipiepy   # 검색/빌드에 필요
 
 # 환경변수 — .env.example 복사 후 OC 키 채우기
 copy .env.example .env
@@ -34,15 +34,43 @@ python scripts/build_index.py all
 ```
 ✓ gold: law_labor 컬렉션 166건 upsert
 ✓ gold: law_housing 컬렉션 42건 upsert
-✓ gold: law_consumer 컬렉션 58건 upsert
+✓ gold: law_consumer 컬렉션 192건 upsert
 ✓ gold: law_finance 컬렉션 812건 upsert
 ```
+
+## 2-B. 데이터 공유 (S3) — 빌드 대신 받거나, 결과 올리기
+
+`data/`(벡터DB)는 git에 안 올라가므로 **S3 공용 버킷**으로 나눈다. OC 키·임베딩 재실행 없이 남이 빌드한 걸 바로 받아 쓸 수 있다.
+
+> ⚠️ **충돌 주의**: `silver/<분야>`·`bronze/<분야>`·`evals` 는 분야별 파일이라 각자 올려도 안 겹치지만,
+> **chroma(벡터DB)·manifest 는 4분야 한 덩어리**라 여러 명이 올리면 덮어쓴다.
+> → chroma는 **'빌더' 한 명(또는 EC2)만** 올린다. 그래서 명령이 스코프로 나뉨.
+
+**최초 1회 (한 명만):** 버킷 생성
+```powershell
+aws s3 mb s3://youth-law-data --region us-west-2   # 버킷명은 팀이 정함(전역 고유)
+```
+**받기 (모두, 안전):** `.env`에 `S3_DATA_BUCKET` 넣고
+```powershell
+python scripts/sync_data.py pull        # S3 → 로컬 (통합 chroma + 전 분야 silver/평가)
+```
+**자기 분야 산출물 올리기 (각자):** 명령에 분야를 직접 지정
+```powershell
+python scripts/sync_data.py push mine consumer   # 내 분야 silver/bronze/evals만 (분야는 본인 것으로)
+```
+**통합 벡터DB 올리기 (빌더 1명만):** pull로 전 분야 silver 모은 뒤
+```powershell
+python scripts/build_index.py all                # 4분야 통합 빌드
+python scripts/sync_data.py push corpus          # chroma + manifest 올림
+```
+> 정리: **각자 `push mine` → 빌더가 `pull` 후 통합 빌드 → `push corpus` → 나머지 `pull`.**
+> 사전: `aws configure`로 자격증명 1회 설정.
 
 ## 3. 데이터·RAG 확인
 
 **(a) 계약 테스트**
 ```powershell
-$env:PYTHONUTF8=1 ; python -m pytest tests/ -q     # 21 passed 면 OK
+$env:PYTHONUTF8=1 ; python -m pytest tests/ -q     # 현재 50 tests 통과면 OK
 ```
 
 **(b) 실검색 동작 확인** (stub이 아니라 진짜 벡터검색인지)
@@ -66,7 +94,7 @@ copy CLAUDE.local.md.example CLAUDE.local.md
 
 **(b) 작업 브랜치** (규약: `<type>/<scope>-주제`)
 ```powershell
-git switch main ; git pull --rebase origin main
+git switch dev ; git pull --ff-only origin dev
 git switch -c feat/consumer-answer      # 예시 (자기 분야로)
 ```
 
@@ -86,7 +114,7 @@ git switch -c feat/consumer-answer      # 예시 (자기 분야로)
 
 - **커밋**: `<type>(<scope>): 한글 제목` 예) `feat(consumer): 청약철회 답변 생성`
 - **푸시/PR 기준**:
-  - 변경 **5개 미만 + 공용파일 아님** → `main` 직접 push OK (단 **push 전 `pytest` 통과** 필수)
+  - 변경 **5개 미만 + 공용파일 아님** → `dev` 직접 push OK (단 **push 전 `pytest` 통과** 필수)
   - **5개 이상 또는 공용파일**(state/graph/rag/contacts/drafter/supervisor/planner/llm/cost/pipeline) → 기능 브랜치 + PR
   - 공용 파일은 개수 무관 **항상 PR + 전원 승인**
 
@@ -98,5 +126,5 @@ git switch -c feat/consumer-answer      # 예시 (자기 분야로)
 
 ---
 
-> ⚠️ **현재 답변은 stub(가짜)입니다.** 검색(RAG)은 실제로 동작하지만, 실제 답변 생성(Bedrock)은
-> 모델 설정 후 Day3부터 붙입니다. 그 전까지는 "검색 결과를 어떻게 다룰지" 로직 위주로 작업하세요.
+> ⚠️ 로컬에 데이터/모델 의존성이 없으면 RAG는 stub 또는 추출 폴백으로 안전하게 동작합니다.
+> 실데이터 품질 확인은 `build_index.py`/`sync_data.py` 후 `scripts/evaluate.py`로 측정하세요.

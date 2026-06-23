@@ -14,6 +14,12 @@ TODO 우선순위
 """
 import os
 
+from dotenv import load_dotenv
+
+from common.logging_store import save_usage
+
+load_dotenv()  # .env 로드 — MODEL_TIERS가 임포트 순서와 무관하게 실제 모델 ID를 읽도록
+
 # 작업별 모델 티어 — 비싼 모델을 모든 곳에 쓰지 않는다
 MODEL_TIERS = {
     "classify": os.getenv("BEDROCK_MODEL_SMALL", "anthropic.claude-haiku(예시)"),
@@ -43,11 +49,13 @@ class UsageTracker:
         tier = _tier_of(task)
         in_p, out_p = PRICING[tier]
         cost = input_tokens / 1000 * in_p + output_tokens / 1000 * out_p
-        self.records.append({
+        rec = {
             "task": task, "tier": tier,
             "input_tokens": input_tokens, "output_tokens": output_tokens,
             "cost_usd": round(cost, 6),
-        })
+        }
+        self.records.append(rec)
+        save_usage(rec)  # RDS 로깅(꺼져 있으면 no-op, 실패해도 호출 흐름 안 죽음)
 
     def report(self) -> dict:
         total_in = sum(r["input_tokens"] for r in self.records)

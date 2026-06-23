@@ -1,0 +1,103 @@
+{"question": "은행에 피해구제 신청은 어디서 하나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제3조"], "category": "voice_phishing", "difficulty": "easy", "note": "피해구제 신청 접수"}
+{"question": "사기범 계좌를 막으려면 내가 먼저 뭘 해야 해요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제4조"], "category": "voice_phishing", "difficulty": "easy", "note": "지급정지 절차"}
+{"question": "피해구제 신청하면 은행이 바로 멈춰주나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제4조"], "category": "voice_phishing", "difficulty": "easy", "note": "지급정지 효력"}
+{"question": "지급정지 뒤에 돌려받기까지 무슨 절차가 있나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제9조", "전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제10조"], "category": "voice_phishing", "difficulty": "medium", "note": "채권소멸과 환급"}
+{"question": "채권소멸 공고는 왜 하나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제9조"], "category": "voice_phishing", "difficulty": "medium", "note": "채권소멸절차"}
+{"question": "피해환급금은 누가 계산하나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제10조"], "category": "voice_phishing", "difficulty": "medium", "note": "피해환급금 지급"}
+{"question": "피해환급금은 신청한 금액을 전부 다 돌려받나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제10조"], "category": "voice_phishing", "difficulty": "medium", "note": "피해환급금 산정"}
+{"question": "명의인 이의제기는 언제 해야 해요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제7조"], "category": "voice_phishing", "difficulty": "hard", "note": "명의인 이의제기"}
+{"question": "정지된 제 계좌가 사기계좌가 아니면 어떻게 해요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제7조"], "category": "voice_phishing", "difficulty": "hard", "note": "명의인 관점"}
+{"question": "보이스피싱 전화번호는 통신사가 바로 정지시키나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제13조의3"], "category": "voice_phishing", "difficulty": "medium", "note": "전화번호 이용중지"}
+{"question": "전화번호 이용중지는 누가 요청하나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제13조의3"], "category": "voice_phishing", "difficulty": "medium", "note": "전화번호 이용중지"}
+{"question": "통장만 빌려줬는데 금융거래 제한도 바로 걸리나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제13조의2"], "category": "voice_phishing", "difficulty": "hard", "note": "명의인 전자금융거래 제한"}
+{"question": "사기이용계좌 명의인도 전자금융거래를 못 하나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제13조의2"], "category": "voice_phishing", "difficulty": "hard", "note": "명의인 제한"}
+{"question": "피해구제 신청서에 꼭 넣어야 할 내용이 있나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제3조"], "category": "voice_phishing", "difficulty": "medium", "note": "신청서 기재사항"}
+{"question": "사기계좌 지급정지는 계좌 하나만 막나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제4조"], "category": "voice_phishing", "difficulty": "medium", "note": "지급정지 범위"}
+{"question": "피해금 환급은 바로 들어오는 게 아니죠", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제9조", "전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제10조"], "category": "voice_phishing", "difficulty": "hard", "note": "채권소멸 후 환급"}
+{"question": "사기인지 알기 전에 보낸 돈도 돌려받을 수 있나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제3조", "전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제4조"], "category": "voice_phishing", "difficulty": "medium", "note": "피해구제 신청·지급정지"}
+{"question": "보이스피싱 피해를 신고하면 은행은 어떤 조치를 해요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제3조", "전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제4조"], "category": "voice_phishing", "difficulty": "medium", "note": "피해구제 신청·지급정지"}
+{"question": "통신사기 피해가 나면 계좌와 번호를 둘 다 막을 수 있나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제4조", "전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제13조의3"], "category": "voice_phishing", "difficulty": "hard", "note": "지급정지·전화번호 이용중지"}
+{"question": "개인회생 신청 자격은 정확히 어떻게 되나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제579조", "채무자 회생 및 파산에 관한 법률 제588조"], "category": "debt_restructuring", "difficulty": "easy", "note": "개인회생 자격"}
+{"question": "월 소득이 있으면 개인회생 신청 가능한가요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제579조", "채무자 회생 및 파산에 관한 법률 제588조"], "category": "debt_restructuring", "difficulty": "easy", "note": "개인회생 신청권"}
+{"question": "개인회생 신청서에 뭘 붙여서 내야 하나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제589조"], "category": "debt_restructuring", "difficulty": "medium", "note": "개시신청서·첨부서류"}
+{"question": "개인회생 변제계획안은 언제 제출하나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제610조"], "category": "debt_restructuring", "difficulty": "medium", "note": "변제계획안 제출"}
+{"question": "변제계획안이 거절될 수도 있나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제610조"], "category": "debt_restructuring", "difficulty": "hard", "note": "변제계획안 심사"}
+{"question": "빚이 너무 많아도 파산 면책이 되면 끝나는 건가요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제566조"], "category": "debt_restructuring", "difficulty": "easy", "note": "면책의 효력"}
+{"question": "면책신청은 파산 후에 따로 하나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제556조"], "category": "debt_restructuring", "difficulty": "easy", "note": "면책신청"}
+{"question": "면책신청이 기각되는 이유가 있나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제559조"], "category": "debt_restructuring", "difficulty": "medium", "note": "면책신청 기각사유"}
+{"question": "면책이 되면 빚 독촉이 완전히 끝나나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제566조"], "category": "debt_restructuring", "difficulty": "medium", "note": "면책의 효력"}
+{"question": "개인회생은 누구나 신청할 수 있는 건 아니죠", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제579조", "채무자 회생 및 파산에 관한 법률 제588조"], "category": "debt_restructuring", "difficulty": "medium", "note": "개인회생 신청권"}
+{"question": "개인회생 절차 개시를 신청하면 바로 효과가 생기나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제588조", "채무자 회생 및 파산에 관한 법률 제589조"], "category": "debt_restructuring", "difficulty": "hard", "note": "개시신청·첨부서류"}
+{"question": "개인회생 신청하고 나서 다시 보완서류를 내야 할 수 있나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제589조"], "category": "debt_restructuring", "difficulty": "medium", "note": "개시신청서·첨부서류"}
+{"question": "파산 후 면책이 안 되면 어떻게 되나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제559조", "채무자 회생 및 파산에 관한 법률 제566조"], "category": "debt_restructuring", "difficulty": "hard", "note": "면책 기각·효력"}
+{"question": "면책 신청서를 늦게 내면 문제가 되나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제556조"], "category": "debt_restructuring", "difficulty": "medium", "note": "면책신청"}
+{"question": "변제계획안 제출이 늦으면 절차가 밀리나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제610조"], "category": "debt_restructuring", "difficulty": "medium", "note": "변제계획안 제출"}
+{"question": "개인회생이 뭔지 한 번만 쉽게 설명해줘", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제579조"], "category": "debt_restructuring", "difficulty": "easy", "note": "개인회생 정의"}
+{"question": "파산과 면책은 같은 건가요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제556조", "채무자 회생 및 파산에 관한 법률 제566조"], "category": "debt_restructuring", "difficulty": "easy", "note": "파산·면책"}
+{"question": "개인회생 신청하면 변제계획안까지 같이 생각해야 하나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제589조", "채무자 회생 및 파산에 관한 법률 제610조"], "category": "debt_restructuring", "difficulty": "medium", "note": "신청서·변제계획안"}
+{"question": "면책이 거절되면 채무는 계속 남나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제559조", "채무자 회생 및 파산에 관한 법률 제566조"], "category": "debt_restructuring", "difficulty": "hard", "note": "면책 기각·효력"}
+{"question": "개인회생 신청권자가 따로 정해져 있나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제588조"], "category": "debt_restructuring", "difficulty": "medium", "note": "신청권자"}
+{"question": "개인회생 절차를 시작하려면 어떤 서류부터 준비해야 하나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제589조"], "category": "debt_restructuring", "difficulty": "medium", "note": "첨부서류"}
+{"question": "파산한 뒤 면책이 되어도 모든 빚이 한 번에 없어지나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제566조"], "category": "debt_restructuring", "difficulty": "hard", "note": "면책의 효력"}
+{"question": "빚 독촉 전화가 밤마다 와요. 이게 불법인가요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제9조"], "category": "collection", "difficulty": "easy", "note": "폭행·협박 등 금지"}
+{"question": "추심업체가 밤늦게 집으로 찾아오는 건 안 되죠", "expected_articles": ["채권의 공정한 추심에 관한 법률 제9조"], "category": "collection", "difficulty": "easy", "note": "야간 방문"}
+{"question": "변호사 선임 뒤에도 제가 직접 연락받아야 하나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제8조의2"], "category": "collection", "difficulty": "medium", "note": "대리인 선임 시 연락 금지"}
+{"question": "대리인에게 연락해야지 저한테 직접 연락하면 안 되나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제8조의2"], "category": "collection", "difficulty": "medium", "note": "대리인 연락 금지"}
+{"question": "가족에게 빚 얘기하는 것도 금지인가요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제10조", "채권의 공정한 추심에 관한 법률 제8조의3"], "category": "collection", "difficulty": "medium", "note": "개인정보 누설"}
+{"question": "회사 사람들한테 빚 사실을 알리는 건 위법인가요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제8조의3", "채권의 공정한 추심에 관한 법률 제12조"], "category": "collection", "difficulty": "hard", "note": "관계인 연락 금지·불공정 행위"}
+{"question": "채무확인서는 꼭 써줘야 하나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제5조"], "category": "collection", "difficulty": "easy", "note": "채무확인서 교부"}
+{"question": "얼마 갚아야 하는지 서면으로 받을 수 있나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제5조"], "category": "collection", "difficulty": "easy", "note": "채무확인서 교부"}
+{"question": "추심 비용을 따로 청구할 수 있나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제13조"], "category": "collection", "difficulty": "medium", "note": "부당한 비용 청구"}
+{"question": "부당한 추심비용을 요구하면 어디 조항 위반인가요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제13조"], "category": "collection", "difficulty": "medium", "note": "부당한 비용 청구"}
+{"question": "같은 빚으로 여러 업체가 동시에 독촉해도 되나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제7조"], "category": "collection", "difficulty": "easy", "note": "복수 추심 위임 금지"}
+{"question": "복수 위임이 금지된다고 들었는데 맞나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제7조"], "category": "collection", "difficulty": "easy", "note": "복수 추심 위임 금지"}
+{"question": "협박하면서 갚으라고 하면 무슨 조항을 보나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제9조", "채권의 공정한 추심에 관한 법률 제12조"], "category": "collection", "difficulty": "medium", "note": "폭행·협박 등 금지"}
+{"question": "동료에게 연락하겠다는 말도 불법인가요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제8조의3", "채권의 공정한 추심에 관한 법률 제12조"], "category": "collection", "difficulty": "hard", "note": "관계인 연락 금지"}
+{"question": "반복적으로 방문해서 압박하는 것도 막을 수 있나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제9조"], "category": "collection", "difficulty": "medium", "note": "야간 방문"}
+{"question": "채권추심 과정에서 개인정보를 막 보호해야 하나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제10조", "채권의 공정한 추심에 관한 법률 제8조의3"], "category": "collection", "difficulty": "hard", "note": "개인정보 누설"}
+{"question": "추심업자가 서류를 안 주면 어떻게 되나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제5조"], "category": "collection", "difficulty": "medium", "note": "채무확인서 교부"}
+{"question": "빚 독촉이 너무 심할 때 바로 적용되는 법 조항이 뭔가요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제9조", "채권의 공정한 추심에 관한 법률 제12조"], "category": "collection", "difficulty": "medium", "note": "불법 추심"}
+{"question": "회사로 전화해서 빚 얘기를 퍼뜨리면 어떻게 되나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제8조의3", "채권의 공정한 추심에 관한 법률 제10조"], "category": "collection", "difficulty": "hard", "note": "관계인 연락 금지"}
+{"question": "추심업자가 가족에게 연락했는데도 계속될 수 있나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제10조"], "category": "collection", "difficulty": "medium", "note": "개인정보 누설"}
+{"question": "독촉 전화와 방문을 동시에 하면 더 문제가 되나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제9조"], "category": "collection", "difficulty": "medium", "note": "야간 방문"}
+{"question": "채무확인서를 받으면 그 뒤 추심을 멈춰야 하나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제5조", "채권의 공정한 추심에 관한 법률 제7조"], "category": "collection", "difficulty": "hard", "note": "채무확인서 교부·복수 위임 금지"}
+{"question": "대부업체 이자 상한이 몇 퍼센트예요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제8조"], "category": "loan", "difficulty": "easy", "note": "이자율 제한"}
+{"question": "이자율 제한을 넘기면 계약이 무효인가요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제8조"], "category": "loan", "difficulty": "medium", "note": "이자율 제한"}
+{"question": "대출 전에 상환능력도 봐야 하나요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제7조"], "category": "loan", "difficulty": "easy", "note": "과잉 대부 금지"}
+{"question": "갚을 능력 없이 빌려주면 위법인가요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제7조"], "category": "loan", "difficulty": "easy", "note": "과잉 대부 금지"}
+{"question": "무등록 사채업자와 맺은 계약은 유효한가요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제11조"], "category": "loan", "difficulty": "medium", "note": "불법사금융업자와의 계약 효력"}
+{"question": "등록 안 된 대부업자도 이자를 받을 수 있나요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제11조", "대부업 등의 등록 및 금융이용자 보호에 관한 법률 제8조"], "category": "loan", "difficulty": "medium", "note": "불법사금융업자와 이자율 제한"}
+{"question": "무이자 광고인데 수수료를 떼면 안 되죠", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제9조의3"], "category": "loan", "difficulty": "easy", "note": "허위·과장 광고"}
+{"question": "거짓 과장 광고로 빌려주면 처벌되나요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제9조의3"], "category": "loan", "difficulty": "medium", "note": "허위·과장 광고"}
+{"question": "대부업체 광고에서 금리 표시를 속이면 어디 조항인가요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제9조의3"], "category": "loan", "difficulty": "medium", "note": "허위·과장 광고"}
+{"question": "과잉 대부 금지는 언제 적용되나요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제7조"], "category": "loan", "difficulty": "medium", "note": "과잉 대부 금지"}
+{"question": "신용이 낮아도 무조건 많이 빌려주면 안 되나요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제7조"], "category": "loan", "difficulty": "medium", "note": "과잉 대부 금지"}
+{"question": "불법사금융 계약도 법적으로 인정되나요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제11조"], "category": "loan", "difficulty": "hard", "note": "계약 효력"}
+{"question": "무등록 업체가 만든 계약을 취소할 수 있나요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제11조"], "category": "loan", "difficulty": "hard", "note": "계약 효력"}
+{"question": "수수료만 따로 떼는 구조도 금지인가요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제9조의3"], "category": "loan", "difficulty": "medium", "note": "허위·과장 광고"}
+{"question": "대부업체가 광고와 다른 조건을 내세우면 어디 조항을 보나요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제9조의3"], "category": "loan", "difficulty": "medium", "note": "허위·과장 광고"}
+{"question": "대출 심사 없이 돈을 막 빌려주는 건 문제인가요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제7조"], "category": "loan", "difficulty": "easy", "note": "과잉 대부 금지"}
+{"question": "연 이자 한도를 넘으면 바로 위법인가요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제8조"], "category": "loan", "difficulty": "easy", "note": "이자율 제한"}
+{"question": "사채업자가 등록번호를 안 보여줘도 되나요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제11조"], "category": "loan", "difficulty": "medium", "note": "불법사금융업자"}
+{"question": "광고에서 무이자라고 해놓고 실제론 비용이 있으면 불법인가요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제9조의3"], "category": "loan", "difficulty": "hard", "note": "허위·과장 광고"}
+{"question": "과잉 대부 여부는 누가 판단하나요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제7조"], "category": "loan", "difficulty": "hard", "note": "과잉 대부 금지"}
+{"question": "등록 대부업인지 아닌지 어떻게 구분하나요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제11조"], "category": "loan", "difficulty": "medium", "note": "불법사금융업자"}
+{"question": "금리 대신 수수료로 돌려받는 것도 막을 수 있나요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제9조의3"], "category": "loan", "difficulty": "hard", "note": "허위·과장 광고"}
+{"question": "대부업법에서 가장 먼저 보는 건 이자율인가요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제8조"], "category": "loan", "difficulty": "easy", "note": "이자율 제한"}
+{"question": "과잉 대부와 허위 광고가 같이 있으면 둘 다 문제인가요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제7조", "대부업 등의 등록 및 금융이용자 보호에 관한 법률 제9조의3"], "category": "loan", "difficulty": "hard", "note": "과잉 대부·허위 광고"}
+{"question": "대부업 등록 여부를 확인해야 이자율도 판단되나요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제11조", "대부업 등의 등록 및 금융이용자 보호에 관한 법률 제8조"], "category": "loan", "difficulty": "medium", "note": "등록 여부·이자율 제한"}
+{"question": "모르는 사람한테 돈을 보냈을 때 바로 신청하는 제도가 있나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제3조"], "category": "voice_phishing", "difficulty": "easy", "note": "피해구제 신청"}
+{"question": "계좌가 정지됐는데 제가 명의인이라면 어떻게 다투나요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제7조"], "category": "voice_phishing", "difficulty": "hard", "note": "명의인 이의제기"}
+{"question": "보이스피싱 번호를 막는 건 어떤 경우에 가능한가요", "expected_articles": ["전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제13조의3"], "category": "voice_phishing", "difficulty": "medium", "note": "전화번호 이용중지"}
+{"question": "개인회생은 소득이 있어야만 신청할 수 있나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제579조"], "category": "debt_restructuring", "difficulty": "easy", "note": "개인회생 신청권"}
+{"question": "개시신청서에 붙여야 하는 서류가 따로 있나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제589조"], "category": "debt_restructuring", "difficulty": "medium", "note": "개시신청서·첨부서류"}
+{"question": "변제계획안은 나중에 내도 되나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제610조"], "category": "debt_restructuring", "difficulty": "medium", "note": "변제계획안 제출"}
+{"question": "면책이 거절되면 빚이 그대로 남나요", "expected_articles": ["채무자 회생 및 파산에 관한 법률 제559조"], "category": "debt_restructuring", "difficulty": "hard", "note": "면책 기각사유"}
+{"question": "가족에게 빚 얘기했다고 전화하면 안 되죠", "expected_articles": ["채권의 공정한 추심에 관한 법률 제8조의3"], "category": "collection", "difficulty": "easy", "note": "관계인 연락 금지"}
+{"question": "회사에 전화해서 빚 사실을 퍼뜨리면 안 되나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제8조의3"], "category": "collection", "difficulty": "medium", "note": "관계인 연락 금지"}
+{"question": "밤늦게 집으로 찾아오는 독촉도 막을 수 있나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제9조"], "category": "collection", "difficulty": "easy", "note": "야간 방문"}
+{"question": "채무확인서를 안 주면 어떤 조항을 보나요", "expected_articles": ["채권의 공정한 추심에 관한 법률 제5조"], "category": "collection", "difficulty": "easy", "note": "채무확인서 교부"}
+{"question": "수수료만 따로 떼는 대출은 문제인가요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제9조의3"], "category": "loan", "difficulty": "easy", "note": "허위·과장 광고"}
+{"question": "제 형편도 안 보고 돈을 빌려주면 위법인가요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제7조"], "category": "loan", "difficulty": "easy", "note": "과잉 대부 금지"}
+{"question": "등록 안 된 사채업자와 맺은 계약도 유효한가요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제11조"], "category": "loan", "difficulty": "medium", "note": "불법사금융업자와의 계약 효력"}
+{"question": "정해진 이자 한도를 넘기면 어떻게 되나요", "expected_articles": ["대부업 등의 등록 및 금융이용자 보호에 관한 법률 제8조"], "category": "loan", "difficulty": "medium", "note": "이자율 제한"}

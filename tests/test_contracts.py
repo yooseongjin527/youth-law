@@ -2,6 +2,8 @@
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agents.consumer import consumer_agent
@@ -9,6 +11,34 @@ from agents.finance import finance_agent
 from agents.housing import housing_agent
 from agents.labor import labor_agent, labor_draft
 from state import DOMAINS
+
+
+@pytest.fixture(autouse=True)
+def _mock_live_llm(monkeypatch):
+    """계약 테스트는 구조 검증만 하고 live Bedrock 네트워크를 타지 않는다."""
+    import agents.housing as housing
+    import agents.verifier as verifier
+    import common.base_agent_answer as base_agent
+    import common.llm as llm
+
+    def fake_json(*args, required_keys=None, **kwargs):
+        keys = set(required_keys or [])
+        if "domains" in keys:
+            return {"domains": [], "confidence": 0.0}
+        if "used" in keys:
+            return {"answer": "검색된 조문에 근거한 테스트 답변입니다.", "used": [1]}
+        if "ungrounded" in keys:
+            return {"ungrounded": []}
+        return {"answer": "검색된 조문에 근거한 테스트 답변입니다.", "confidence": 0.8}
+
+    monkeypatch.setattr(
+        base_agent,
+        "call_bedrock",
+        lambda *a, **k: "검색된 조문에 근거한 테스트 답변입니다.",
+    )
+    monkeypatch.setattr(llm, "call_bedrock_json", fake_json)
+    monkeypatch.setattr(housing, "call_bedrock_json", fake_json)
+    monkeypatch.setattr(verifier, "call_bedrock_json", fake_json)
 
 
 def _state(q="테스트"):
@@ -88,20 +118,56 @@ def test_document_draft():
     assert "검토" in draft["guide"]
 
 
-def test_verifier_passes_grounded():
-    """검증: 인용 있는 정상 답변은 통과."""
-    from agents.verifier import verifier_agent
-    state = _state()
-    state["domain_answers"] = [{
-        "domain": "labor", "answer": "테스트 답변",
-        "citations": [{"law_name": "근로기준법", "article": "제36조",
-                       "enforced_date": "2021-11-19", "snippet": "조문 원문",
+def _answer(text, conf=0.8):
+    return {
+        "domain": "labor", "answer": text,
+        "citations": [{"law_name": "근로기준법", "article": "제43조",
+                       "enforced_date": "2021-11-19",
+                       "snippet": "임금은 매월 1회 이상 일정한 날짜를 정하여 지급하여야 한다.",
                        "source_url": "https://law.go.kr"}],
-        "contacts": [], "confidence": 0.8,
-    }]
-    r = verifier_agent(state)
+        "contacts": [], "confidence": conf,
+    }
+
+
+def test_verifier_passes_grounded(monkeypatch):
+    """검증: 근거된 답변은 그대로 통과 (판정기 mock으로 결정적 테스트)."""
+    import agents.verifier as v
+    monkeypatch.setattr(v, "call_bedrock_json", lambda *a, **k: {"ungrounded": []})
+    state = _state()
+    state["domain_answers"] = [_answer("임금은 매월 1회 이상 지급해야 합니다.")]
+    r = v.verifier_agent(state)
     assert len(r["verified_answers"]) == 1
     assert r["verification_report"][0]["dropped"] is False
+    assert (
+        r["verified_answers"][0]["answer"]
+        == "임금은 매월 1회 이상 지급해야 합니다."
+    )  # 변형 없음
+
+
+def test_verifier_removes_hallucinated_sentence(monkeypatch):
+    """검증(B): 환각 문장만 제거하고 나머지는 정제본으로 통과."""
+    import agents.verifier as v
+    monkeypatch.setattr(v, "call_bedrock_json", lambda *a, **k: {"ungrounded": [2]})
+    state = _state()
+    state["domain_answers"] = [
+        _answer("임금은 매월 지급해야 합니다.\n사용자는 제999조로 즉시 해고할 수 있습니다.")
+    ]
+    r = v.verifier_agent(state)
+    assert len(r["verified_answers"]) == 1
+    ans = r["verified_answers"][0]["answer"]
+    assert "제999조" not in ans      # 환각 문장 제거됨
+    assert "임금은 매월" in ans        # 근거 문장 보존
+
+
+def test_verifier_drops_all_hallucinated(monkeypatch):
+    """검증(B): 모든 문장이 환각이면 통째 탈락 (정직 거절 경로)."""
+    import agents.verifier as v
+    monkeypatch.setattr(v, "call_bedrock_json", lambda *a, **k: {"ungrounded": [1, 2]})
+    state = _state()
+    state["domain_answers"] = [_answer("지어낸 주장 하나. 지어낸 주장 둘.")]
+    r = v.verifier_agent(state)
+    assert len(r["verified_answers"]) == 0
+    assert r["verification_report"][0]["dropped"] is True
 
 
 def test_verifier_drops_uncited():
@@ -141,22 +207,11 @@ def test_cost_tracker():
     assert r["by_task"]["classify"]["calls"] == 1
 
 
-def test_eval_retrieval_runs():
-    """평가 축: hit@k 측정이 평가셋으로 실행됨 (stub이라 값은 낮아도 OK)."""
-    import sys; sys.path.insert(0, ".")
-    from scripts.evaluate import eval_retrieval
-    r = eval_retrieval("labor")
-    assert r["n"] >= 3                  # 평가셋 존재
-    assert r["hit_at_k"] is not None    # 측정 자체가 동작
-
-
-def test_eval_grounding_runs():
-    """환각 축: grounding rate 측정이 실행됨."""
-    import sys; sys.path.insert(0, ".")
-    from scripts.evaluate import eval_grounding
-    r = eval_grounding("labor")
-    assert r["n"] >= 3
-    assert 0.0 <= r["grounding_rate"] <= 1.0
+# 평가(eval) 스모크는 tests/test_eval_smoke.py 로 분리했다.
+# 이유: hit@k·grounding rate '실측'은 라이브 LLM·전체 평가셋이 필요해 비싸고(분 단위)
+#   비결정적이라, 계약(I/O 구조) 게이트에 두면 평가셋·분야가 늘수록 CI가 폭발한다
+#   (eval_grounding은 분야당 문항수 × LLM 2회 호출). → 실측은 scripts/evaluate.py
+#   (온디맨드), CI 스모크는 Bedrock mock으로 가볍게(무네트워크·결정적).
 
 
 def test_diff_laws_incremental():
@@ -200,9 +255,38 @@ def test_silver_chunking():
     assert c["source_url"]
 
 
+def test_silver_chunking_항본문_누락방지():
+    """긴 조문은 조문내용에 헤더만 오고 실제 본문은 항·호 하위요소에 온다.
+    조문내용(헤더)만 본문으로 쓰면 청약철회 같은 핵심 조문이 빈 껍데기가 된다 → 누락 금지."""
+    from pipeline.silver import parse_law_xml
+    xml = """<법령>
+      <조문단위>
+        <조문번호>17</조문번호>
+        <조문여부>조문</조문여부>
+        <조문제목>청약철회등</조문제목>
+        <조문내용>제17조(청약철회등)</조문내용>
+        <항>
+          <항번호>①</항번호>
+          <항내용>① 소비자는 다음 각 호의 기간 이내에 청약철회를 할 수 있다.</항내용>
+          <호>
+            <호번호>1.</호번호>
+            <호내용>1. 계약내용에 관한 서면을 받은 날부터 7일</호내용>
+          </호>
+        </항>
+      </조문단위>
+    </법령>"""
+    chunks = parse_law_xml(xml, "전자상거래법", "20260721")
+    assert len(chunks) == 1
+    c = chunks[0]
+    assert c["article"] == "제17조"
+    assert "청약철회를 할 수 있다" in c["text"]   # 항 본문 누락 금지
+    assert "7일" in c["text"]                      # 호 본문 누락 금지
+
+
 def test_api_consult():
     """웹서비스: /api/consult 가 분류·카드·검증리포트를 반환."""
     from fastapi.testclient import TestClient
+
     from app.api import app as fastapi_app
     client = TestClient(fastapi_app)
     r = client.post("/api/consult", json={"question": "보증금을 안 돌려줘요"})
@@ -216,6 +300,7 @@ def test_api_consult():
 def test_api_draft():
     """웹서비스: /api/draft 가 '초안' 경고 포함 문서를 반환."""
     from fastapi.testclient import TestClient
+
     from app.api import app as fastapi_app
     client = TestClient(fastapi_app)
     r = client.post("/api/draft", json={"question": "월급을 못 받았어요", "domain": "labor"})
@@ -226,6 +311,7 @@ def test_api_draft():
 def test_api_index_page():
     """웹서비스: 메인 화면(Jinja)이 렌더링됨."""
     from fastapi.testclient import TestClient
+
     from app.api import app as fastapi_app
     client = TestClient(fastapi_app)
     r = client.get("/")

@@ -1,3 +1,60 @@
-{"question": "인터넷으로 산 옷을 환불하고 싶어요", "expected_articles": ["전자상거래법 제17조"], "note": "청약철회 7일"}
-{"question": "온라인 쇼핑몰이 환불을 거부해요", "expected_articles": ["전자상거래법 제17조", "전자상거래법 제18조"], "note": "청약철회 효과"}
-{"question": "배송이 한 달째 안 와요", "expected_articles": ["전자상거래법 제15조"], "note": "재화 공급"}
+{"question": "인터넷으로 산 옷을 환불하고 싶은데 며칠 안에 해야 해요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제17조"], "note": "전자상거래·청약철회 기간 (easy)"}
+{"question": "온라인 쇼핑몰이 환불을 못 해준대요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제17조", "전자상거래 등에서의 소비자보호에 관한 법률 제18조", "전자상거래 등에서의 소비자보호에 관한 법률 제21조"], "note": "전자상거래·청약철회/효과/방해 (easy)"}
+{"question": "주문한 물건이 한 달째 안 와요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제15조"], "note": "전자상거래·재화 공급 (easy)"}
+{"question": "단순 변심으로 반품하면 반송 택배비는 누가 내요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제18조"], "note": "전자상거래·청약철회 비용부담 (medium)"}
+{"question": "받은 옷이 광고랑 완전히 달라요. 그래도 7일 지나면 환불 못 받나요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제17조"], "note": "전자상거래·표시광고 다른 경우 기간연장 (hard)"}
+{"question": "주문 제작한 상품인데도 무조건 청약철회가 되나요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제17조"], "note": "전자상거래·청약철회 제한 (hard)"}
+{"question": "오픈마켓에서 샀는데 판매자가 잠적했어요. 쇼핑몰은 책임 없나요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제20조", "전자상거래 등에서의 소비자보호에 관한 법률 제20조의2"], "note": "전자상거래·통신판매중개자 책임 (hard)"}
+{"question": "쇼핑몰이 광고를 거짓으로 부풀려서 속았어요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제21조"], "note": "전자상거래·금지행위 (medium)"}
+{"question": "결제 직전에 슬쩍 가격을 올리거나 취소를 일부러 어렵게 만들어요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제21조의2", "전자상거래 등에서의 소비자보호에 관한 법률 제21조"], "note": "전자상거래·다크패턴 (hard)"}
+{"question": "판매자 상호나 연락처가 어디에도 안 보여요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제13조"], "note": "전자상거래·신원 정보제공 (medium)"}
+{"question": "주문했는데 접수됐다는 확인을 안 해줘요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제14조"], "note": "전자상거래·청약확인 (medium)"}
+{"question": "약관에 환불 절대 불가라고 써 있으면 그게 유효한가요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제35조"], "note": "전자상거래·소비자 불리 계약 금지 (hard)"}
+{"question": "혼자 해결이 안 되는데 분쟁조정 같은 걸 신청할 수 있나요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제33조"], "note": "전자상거래·분쟁조정 (medium)"}
+{"question": "쇼핑몰이 갑자기 망하면 결제한 돈은 보호받을 방법이 있나요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제24조"], "note": "전자상거래·소비자피해보상보험 (hard)"}
+{"question": "통신판매가 정확히 뭔가요? 일반 인터넷쇼핑도 다 해당되나요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제2조"], "note": "전자상거래·정의 (easy)"}
+{"question": "청약철회했는데 환불을 며칠째 안 해줘요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제18조"], "note": "전자상거래·환급 지연 (medium)"}
+{"question": "환불을 현금 대신 적립금으로만 해준대요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제18조"], "note": "전자상거래·대금 환급 (medium)"}
+{"question": "이모티콘 같은 디지털 상품을 샀는데 환불이 안 된대요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제17조"], "note": "전자상거래·디지털콘텐츠 청약철회 제한 (hard)"}
+{"question": "후기가 다 조작된 것 같은데 단속이 안 되나요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제21조"], "note": "전자상거래·금지행위(거짓·과장) (medium)"}
+{"question": "해외 직구 사이트인데 국내에 연락할 곳이 없어요", "expected_articles": ["전자상거래 등에서의 소비자보호에 관한 법률 제20조의5"], "note": "전자상거래·국내대리인 (hard)"}
+{"question": "방문판매원이 와서 산 정수기를 청약철회하려는데 며칠 안에 해야 하나요", "expected_articles": ["방문판매 등에 관한 법률 제8조"], "note": "방문판매·청약철회 기간 (easy)"}
+{"question": "방문판매로 산 물건을 돌려보냈는데 환급은 어떻게 되나요", "expected_articles": ["방문판매 등에 관한 법률 제9조"], "note": "방문판매·청약철회 효과 (medium)"}
+{"question": "전화권유로 가입한 상품을 취소하고 싶어요", "expected_articles": ["방문판매 등에 관한 법률 제8조"], "note": "방문판매·전화권유 청약철회 (medium)"}
+{"question": "방문판매 업체가 신고도 안 하고 영업하는 것 같아요", "expected_articles": ["방문판매 등에 관한 법률 제5조"], "note": "방문판매·신고 (medium)"}
+{"question": "방문판매원이 신원이나 판매조건을 제대로 안 알려줬어요", "expected_articles": ["방문판매 등에 관한 법률 제7조"], "note": "방문판매·정보제공의무 (medium)"}
+{"question": "전화권유판매는 통화 내용을 따로 보관해야 하나요", "expected_articles": ["방문판매 등에 관한 법률 제7조의2"], "note": "방문판매·통화내용 보존 (hard)"}
+{"question": "다단계판매 회사는 어디에 등록해야 하나요", "expected_articles": ["방문판매 등에 관한 법률 제13조"], "note": "방문판매·다단계 등록 (medium)"}
+{"question": "다단계로 산 제품을 청약철회할 수 있나요", "expected_articles": ["방문판매 등에 관한 법률 제17조"], "note": "방문판매·다단계 청약철회 (medium)"}
+{"question": "다단계로 산 걸 청약철회하면 이미 낸 돈은 어떻게 돌려받나요", "expected_articles": ["방문판매 등에 관한 법률 제18조"], "note": "방문판매·다단계 청약철회 효과 (medium)"}
+{"question": "다단계 후원수당은 어떤 기준으로 줘야 하나요", "expected_articles": ["방문판매 등에 관한 법률 제20조"], "note": "방문판매·후원수당 기준 (hard)"}
+{"question": "다단계 업체가 사재기를 강요해요", "expected_articles": ["방문판매 등에 관한 법률 제24조"], "note": "방문판매·사행적 확장 금지 (hard)"}
+{"question": "후원방문판매자도 따로 지켜야 할 의무가 있나요", "expected_articles": ["방문판매 등에 관한 법률 제29조"], "note": "방문판매·후원방문판매자 의무 (hard)"}
+{"question": "구독 서비스 업체가 계약 조건을 제대로 안 알려줬어요", "expected_articles": ["방문판매 등에 관한 법률 제30조"], "note": "방문판매·계속거래 정보제공 (medium)"}
+{"question": "구독 서비스를 중간에 해지할 수 있나요", "expected_articles": ["방문판매 등에 관한 법률 제31조"], "note": "방문판매·계속거래 해지 (easy)"}
+{"question": "정기결제를 해지했는데 위약금을 너무 많이 떼요", "expected_articles": ["방문판매 등에 관한 법률 제32조"], "note": "방문판매·해지 효과·위약금 (medium)"}
+{"question": "멤버십 계약서에 소비자한테 불리한 조항이 있어요", "expected_articles": ["방문판매 등에 관한 법률 제52조"], "note": "방문판매·불리한 계약 금지 (hard)"}
+{"question": "방문판매원이 거짓말로 계약을 강요했어요", "expected_articles": ["방문판매 등에 관한 법률 제11조"], "note": "방문판매·금지행위 (medium)"}
+{"question": "다단계 업체가 하면 안 되는 행위는 어떤 게 있나요", "expected_articles": ["방문판매 등에 관한 법률 제23조"], "note": "방문판매·다단계 금지행위 (medium)"}
+{"question": "계속거래 업체에 내 거래기록을 보여달라고 할 수 있나요", "expected_articles": ["방문판매 등에 관한 법률 제33조"], "note": "방문판매·거래기록 열람 (medium)"}
+{"question": "방문판매 피해를 분쟁조정으로 해결할 수 있나요", "expected_articles": ["방문판매 등에 관한 법률 제50조"], "note": "방문판매·분쟁조정 (medium)"}
+{"question": "할부로 산 물건을 청약철회하고 싶어요", "expected_articles": ["할부거래에 관한 법률 제8조"], "note": "할부·청약철회 (easy)"}
+{"question": "신용카드 할부로 결제한 걸 취소하려면 누구한테 알려야 하나요", "expected_articles": ["할부거래에 관한 법률 제9조"], "note": "할부·간접할부 철회 통보 (hard)"}
+{"question": "할부 청약철회를 하면 이미 낸 돈은 어떻게 돌려받나요", "expected_articles": ["할부거래에 관한 법률 제10조"], "note": "할부·청약철회 효과 (medium)"}
+{"question": "할부로 산 노트북이 불량인데 남은 할부금을 안 내도 되나요", "expected_articles": ["할부거래에 관한 법률 제16조"], "note": "할부·항변권 (hard)"}
+{"question": "할부금을 한 번 밀렸다고 남은 금액을 한꺼번에 다 갚으라고 해요", "expected_articles": ["할부거래에 관한 법률 제13조"], "note": "할부·기한이익 상실 (hard)"}
+{"question": "할부금을 미리 다 갚으면 수수료를 깎아주나요", "expected_articles": ["할부거래에 관한 법률 제14조"], "note": "할부·기한 전 지급 (medium)"}
+{"question": "할부로 샀는데 계약서를 안 줘요", "expected_articles": ["할부거래에 관한 법률 제6조"], "note": "할부·서면주의 (medium)"}
+{"question": "할부 수수료율을 제대로 안 알려줬어요", "expected_articles": ["할부거래에 관한 법률 제7조"], "note": "할부·실제연간요율 (medium)"}
+{"question": "할부 계약을 하기 전에 어떤 정보를 알려줘야 하나요", "expected_articles": ["할부거래에 관한 법률 제5조"], "note": "할부·계약 전 정보제공 (medium)"}
+{"question": "할부 판매자가 마음대로 계약을 해제할 수 있나요", "expected_articles": ["할부거래에 관한 법률 제11조"], "note": "할부·할부거래업자 해제 (hard)"}
+{"question": "할부 계약을 어겼다고 손해배상을 너무 많이 물려요", "expected_articles": ["할부거래에 관한 법률 제12조"], "note": "할부·손해배상 제한 (medium)"}
+{"question": "상조 상품에 가입했는데 해지하고 그동안 낸 돈을 환급받고 싶어요", "expected_articles": ["할부거래에 관한 법률 제25조"], "note": "할부·선불식 계약 해제 (hard)"}
+{"question": "상조 회사가 망하면 그동안 낸 돈은 보호받나요", "expected_articles": ["할부거래에 관한 법률 제27조"], "note": "할부·선불식 소비자피해보상 (hard)"}
+{"question": "상조 같은 선불식 할부는 계약 전에 무슨 정보를 줘야 하나요", "expected_articles": ["할부거래에 관한 법률 제23조"], "note": "할부·선불식 정보제공·계약서 (medium)"}
+{"question": "선불식 할부로 가입한 상품을 청약철회할 수 있나요", "expected_articles": ["할부거래에 관한 법률 제24조"], "note": "할부·선불식 청약철회 (medium)"}
+{"question": "할부 계약서에 소비자한테 불리한 내용이 있으면 효력이 있나요", "expected_articles": ["할부거래에 관한 법률 제43조"], "note": "할부·불리한 계약 금지 (hard)"}
+{"question": "할부 거래 기록을 열람할 수 있나요", "expected_articles": ["할부거래에 관한 법률 제33조"], "note": "할부·거래기록 열람 (medium)"}
+{"question": "할부대금을 안 갚으면 언제까지 청구할 수 있나요", "expected_articles": ["할부거래에 관한 법률 제15조"], "note": "할부·소멸시효 (hard)"}
+{"question": "할부 거래에서 피해를 봤는데 분쟁조정을 신청할 수 있나요", "expected_articles": ["할부거래에 관한 법률 제41조"], "note": "할부·분쟁조정 (medium)"}
+{"question": "할부 거래에서 사업자가 하면 안 되는 행위는 뭔가요", "expected_articles": ["할부거래에 관한 법률 제34조"], "note": "할부·금지행위 (medium)"}

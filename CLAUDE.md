@@ -97,7 +97,9 @@ tests/test_contracts.py
 
 ### 브랜치 전략 (3계층: `main` ← `dev` ← `feat/*`)
 - **`main` 직접 push 절대 금지.** 4명 누구도, 변경 규모와 무관하게 main에 직접 push하지 않는다. main은 항상 통합·검증 완료된 안정 브랜치다.
-- **`dev`가 통합 브랜치.** 모든 작업은 `feat/*`(또는 fix/docs/…) 브랜치에서 시작해 **`dev`로 PR → merge**. 평소 개발은 전부 dev 위에서 모인다.
+- **`dev`가 통합 브랜치.** 평소 개발은 전부 dev 위에서 모인다. 게이트는 변경 규모·공용 여부로 갈린다:
+  - **소규모·비공용 → `dev` 직접 push 허용** (공용 파일 미포함 + 변경 5개 미만, **push 전 로컬 `pytest tests/` 통과** 필수).
+  - **그 외 → `feat/*` → `dev` PR** (공용 포함 / 5개 이상 / SPEC 영향). 공용 포함은 전원 승인, 분야 전용만이면 담당자 승인.
 - **`dev` → `main`은 릴리스/체크포인트 시점에만 PR로 승격.** main 반영 전 `pytest tests/`가 dev에서 통과한 상태여야 한다. ⚠️ **main 머지 PR은 전원 승인.**
 - 흐름 요약:
   ```
@@ -141,5 +143,8 @@ tests/test_contracts.py
 - ❌ 옛 LangGraph API 추측 → ✅ 불확실하면 질문
 - ❌ 법령 API를 기본 UA·단발 호출 → ✅ User-Agent + 재시도 (gov API가 기본 파이썬 UA 거부·간헐 연결 리셋)
 - ❌ 조문 청킹 시 가지번호(제43조의2)·전문(장 제목) 무시 → ✅ 가지번호 반영·전문 제외 (안 그러면 중복 id로 chromadb 적재 실패)
+- ❌ 청킹 시 조문내용(헤더)만 본문으로 → ✅ 항·호·목 하위요소 본문도 합치기 (긴 조문은 조문내용에 "제17조(청약철회등)" 헤더만 와 본문이 빈 껍데기 됨)
+- ❌ Chroma 컬렉션 기본 거리(L2)로 생성 → ✅ `hnsw:space=cosine` (문장 임베딩은 코사인; L2는 비정규화 벡터에서 score=1-dist가 음수 쓰레기값)
 - ❌ (Windows) 스크립트 콘솔 인코딩 방치 → ✅ `PYTHONUTF8=1` (cp949에서 ✓ 등 출력 시 크래시)
 - ❌ os.getenv 쓰면서 .env 로드 안 함 → ✅ 진입점(config.py)에서 load_dotenv 1회
+- ❌ 줄길이를 글자수(len)로만 점검 → ✅ push 전 `ruff check .` (E501은 한글을 폭 2로 계산 — CI test job이 pytest 전에 ruff 실행)

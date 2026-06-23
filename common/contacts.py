@@ -20,8 +20,20 @@ _CONTACTS: dict[str, list[dict]] = {
         {
             "org": "고용노동부 고객상담센터",
             "phone": "1350",
-            "url": "https://labor.moel.go.kr/",
-            "note": "임금체불·부당해고 진정 상담",
+            "url": "https://1350.moel.go.kr/home/",
+            "note": "임금체불·부당해고·출산휴가 등 노동관계 민원 상담",
+        },
+        {
+            "org": "노동위원회",
+            "phone": "044-202-8226",
+            "url": "https://nlrc.go.kr/nlrc/main/main.do",
+            "note": "부당해고·부당노동행위 구제, 노동쟁의 조정, 차별시정 신청",
+        },
+        {
+            "org": "청소년·청년근로권익센터",
+            "phone": "1644-3119",
+            "url": "https://www.youthlabor.co.kr/customer/info",
+            "note": "청소년·청년 노동상담, 부당대우 상담, 진정사건 대리 등 무료 권리구제 지원",
         },
     ],
     "housing": [
@@ -43,7 +55,31 @@ _CONTACTS: dict[str, list[dict]] = {
             "org": "한국소비자원 소비자상담센터",
             "phone": "1372",
             "url": "https://www.ccn.go.kr/",
-            "note": "환불·계약·온라인거래 분쟁 상담",
+            "note": "온라인거래·방문판매·전화권유·다단계·할부·상조 등 소비자 분쟁 상담",
+        },
+        {
+            "org": "공정거래위원회",
+            "phone": "110",
+            "url": "https://www.ftc.go.kr/www/index.do",
+            "note": "전자상거래·방문판매·할부거래 등 사업자 법 위반행위 신고",
+        },
+        {
+            "org": "직접판매공제조합",
+            "phone": "02-566-1202",
+            "url": "https://www.macco.or.kr/ko/main/main.do",
+            "note": "다단계판매 피해 시 공제(환급) 청구",
+        },
+        {
+            "org": "특수판매공제조합",
+            "phone": "02-2058-0831",
+            "url": "https://www.kossa.or.kr/",
+            "note": "방문판매·후원방문판매 등 피해 시 공제(환급) 청구",
+        },
+        {
+            "org": "한국상조공제조합",
+            "phone": "1688-0972",
+            "url": "https://www.kmaca.or.kr/main/main.do",
+            "note": "상조 등 선불식 할부 업체 폐업 시 피해보상",
         },
     ],
     "finance": [

@@ -9,14 +9,14 @@
 
 | # | 리스크 | 왜 위험한가 | 해소 시점 |
 |---|---|---|---|
-| ① | ~~RAG 미구현~~ → ~~코드 구현~~ → **실데이터 구축·실검색 검증 완료** (로컬 4분야 1078조문, is_real=True) | (해소됨) | **로컬 검증 완료 — EC2에서 `build_index.py all` 1회만 남음** |
+| ① | ~~RAG 미구현~~ → ~~코드 구현~~ → **실데이터 구축·실검색 검증 완료** (4분야 1,212조문, is_real=True; 로컬 Chroma·EC2 RDS pgvector) | (해소됨) | **로컬·EC2 적재 완료** |
 | ② | ~~데이터 소스 이원화 리스크~~ → **단일 소스(국가법령정보센터)로 일원화** | (해소됨) | — |
 | ③ | Supervisor 키워드 분류 구멍 | 키워드 없는 자연어("나오지 말래요") 오탐 | Day3 Bedrock 분류 교체 (가능하면 당기기) |
 | ④ | Bedrock 실행 환경 미정 (계정/리전/모델ID/비용) | 코드보다 먼저 막히는 게 보통 이것 | **Day0~1에 invoke_model 1회 성공** |
 | ⑤ | 평가셋 없음 | Day5 "N% 개선" 발표가 불가능해짐 | **Day1~2에 분야별 평가질문 10~20개** |
 | ⑥ | ~~UI 골격 없음~~ → **구현 완료** (FastAPI 메인화면 + Streamlit 데모) | 남은 건 실데이터 확인·다듬기 | Day4 실데이터로 양쪽 UI 확인 |
 
-①은 **구축·검증 완료**: Chroma + jhgan/ko-sroberta-multitask (common/rag.py 실구현, pipeline/ medallion 적재). `build_index.py all`로 4분야 구축 검증(labor166/housing42/consumer58/finance812, 전 분야 is_real=True). 빌드 블로커 3건 수정(PR #1). 남은 일은 EC2 운영본 구축뿐 (docs/INFRA.md).
+①은 **구축·검증 완료**: Chroma/pgvector + jhgan/ko-sroberta-multitask (common/rag.py 실구현, pipeline/ medallion 적재). `build_index.py all`로 4분야 구축 검증(labor166/housing42/consumer192/finance812, 전 분야 is_real=True). 빌드 블로커 3건 수정(PR #1). EC2 운영본은 RDS pgvector로 적재 완료.
 
 ---
 
@@ -30,13 +30,13 @@
    - 국가법령정보센터(open.law.go.kr → OPEN API 신청: **법령 목록 + 본문**) — 수동 승인 1~2일
    - 한 명 키(OC) 받아 팀 공유 → `.env` (이미 .gitignore에 포함)
 3. **레포 셋업**
-   - 이 골격 업로드 + Squash merge 설정. 브랜치/직접-push 규칙은 CLAUDE.md '브랜치 전략' 따름 (소규모 5개 미만·비공용은 직접 push 허용, 그 외·공용은 PR)
+   - 이 골격 업로드 + Squash merge 설정. 브랜치/직접-push 규칙은 CLAUDE.md '브랜치 전략' 따름 (소규모 5개 미만·비공용은 dev 직접 push 허용, 그 외·공용은 PR)
    - pre-commit(ruff) 설정, GitHub Actions CI 활성화 (.github/workflows/ci.yml 동봉됨)
 4. **전원 로컬 검증** — 4명 각자 클론 후:
    ```bash
    pip install -r requirements.txt
    python graph.py        # 3케이스 출력 확인
-   python -m pytest tests/  # 21 passed 확인
+   python -m pytest tests/  # 현재 50 tests 통과 확인
    ```
    "내 환경에서 안 돌아요"를 Day1에 발견하면 늦다.
 
@@ -75,7 +75,7 @@
 **공용 파일 작업은 여기서 선언** — "오늘 rag.py 제가 잡습니다" (동시 수정 충돌 방지)
 
 ### PR 규칙
-먼저 **PR이 필요한지부터** (CLAUDE.md '브랜치 전략'): 5개 미만·비공용 변경은 `main` 직접 push 허용(push 전 로컬 `pytest` 통과), 그 외/공용은 PR. PR일 때 승인 규칙:
+먼저 **PR이 필요한지부터** (CLAUDE.md '브랜치 전략'): 5개 미만·비공용 변경은 `dev` 직접 push 허용(push 전 로컬 `pytest` 통과), 그 외/공용은 PR. PR일 때 승인 규칙:
 
 | 대상 | 승인 | 비고 |
 |---|---|---|

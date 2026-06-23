@@ -1,70 +1,566 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="ask">
-  <input id="q" type="text" maxlength="500"
-         placeholder="예: 알바비를 못 받았어요 / 전세 보증금을 안 돌려줘요">
-  <button id="go" onclick="consult()">상담</button>
+<section id="landing">
+  <div class="hero">
+    <svg class="hero-illust" viewBox="0 0 172 112" fill="none" aria-hidden="true">
+      <rect x="12" y="12" width="92" height="54" rx="16" fill="var(--card)" stroke="var(--brand)" stroke-width="2.6"/>
+      <path d="M30 62 L30 80 L48 64 Z" fill="var(--card)" stroke="var(--brand)" stroke-width="2.6" stroke-linejoin="round"/>
+      <text x="58" y="49" text-anchor="middle" font-family="Pretendard, sans-serif" font-size="30" font-weight="800" fill="var(--brand)">?</text>
+      <rect x="86" y="42" width="74" height="50" rx="15" fill="var(--accent)"/>
+      <path d="M128 88 L128 104 L112 86 Z" fill="var(--accent)" stroke-linejoin="round"/>
+      <text x="123" y="75" text-anchor="middle" font-family="Georgia, serif" font-size="29" font-weight="700" fill="#ffffff">§</text>
+      <path d="M156 16 l2.2 5 5 2.2 -5 2.2 -2.2 5 -2.2 -5 -5 -2.2 5 -2.2 z" fill="var(--accent)" opacity="0.55"/>
+    </svg>
+    <h1 class="hero-title">법을 몰라 막막했던 순간,<br><span class="accent">청년 생활법률 상담 AI가 풀어드릴게요</span></h1>
+    <p class="hero-sub">
+      평소 쓰는 말로 편하게 적어보세요.<br>
+      맞는 법 조문과 연락처, 문서 초안까지 한 번에 알려드릴게요.
+    </p>
+    <div class="hero-search">
+      <svg viewBox="0 0 24 24" class="ask-ic"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="hq" type="text" maxlength="500" placeholder="어떤 상황인지 편하게 적어주세요">
+      <button class="hero-go" onclick="askFromHero()">물어보기
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="hero-chips">
+      <button class="chip" onclick="askWith('알바비를 못 받았어요')">알바비를 못 받았어요</button>
+      <button class="chip" onclick="askWith('전세 보증금을 안 돌려줘요')">전세 보증금을 안 돌려줘요</button>
+      <button class="chip" onclick="askWith('인터넷으로 산 옷을 환불하고 싶어요')">인터넷으로 산 옷을 환불하고 싶어요</button>
+      <button class="chip" onclick="askWith('대출 독촉 전화가 와요')">대출 독촉 전화가 와요</button>
+    </div>
+    <div class="trust-row">
+      <span class="trust-item"><span class="dot"></span>국가법령정보센터 현행 법령</span>
+      <span class="trust-item"><span class="dot"></span>출처·시행일 함께 제공</span>
+      <span class="trust-item"><span class="dot"></span>회원가입 없이 바로</span>
+    </div>
+  </div>
+
+  <div class="section-head reveal" id="domains">
+    <span class="kicker">왜 ‘청년 맞춤’일까요?</span>
+    <h2>청년 생활과 가장 가까운 <span class="grad">4가지 분야</span></h2>
+    <p>수많은 법령 중, 청년이 일상에서 가장 자주 부딪히는 4개 분야만 골라 깊이 있게 상담해 드립니다.</p>
+  </div>
+  <div class="domains">
+    <article class="domain-card reveal d-labor">
+      <div class="domain-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+      </div>
+      <h3>노동</h3>
+      <p>일하다 겪는 부당한 일</p>
+      <div class="domain-tags"><span>알바비 체불</span><span>부당해고</span><span>주휴수당</span></div>
+    </article>
+    <article class="domain-card reveal d-housing">
+      <div class="domain-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v9a1 1 0 001 1h12a1 1 0 001-1v-9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+      </div>
+      <h3>주택</h3>
+      <p>전·월세와 집 문제</p>
+      <div class="domain-tags"><span>보증금 반환</span><span>계약갱신</span><span>확정일자</span></div>
+    </article>
+    <article class="domain-card reveal d-consumer">
+      <div class="domain-icon">
+        <svg viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7L6 8z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 8a3 3 0 016 0" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+      </div>
+      <h3>소비자</h3>
+      <p>온라인 거래와 환불</p>
+      <div class="domain-tags"><span>청약철회</span><span>환불 거부</span><span>중고거래</span></div>
+    </article>
+    <article class="domain-card reveal d-finance">
+      <div class="domain-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 9l4 6 4-6M9.5 12h5M9.5 14h5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      </div>
+      <h3>금융</h3>
+      <p>대출·연체·금융 사기</p>
+      <div class="domain-tags"><span>대출 연체</span><span>불법추심</span><span>보이스피싱</span></div>
+    </article>
+  </div>
+
+  <div class="section-head reveal">
+    <span class="kicker">믿고 쓸 수 있는 이유</span>
+    <h2>법을 몰라도, 안심하고 쓰세요</h2>
+    <p>막연한 검색 대신, 실제 법령을 근거로 정확하게 — 세 가지를 약속해요.</p>
+  </div>
+  <div class="features">
+    <article class="feature reveal">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 3v5h5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 13.5l2 2 4-4.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h3>지어내지 않는 답변</h3>
+      <p>실제 현행 법령을 찾아 알려드려요. 법령명·조항·시행일·출처를 함께 보여드려 직접 확인할 수 있어요.</p>
+    </article>
+    <article class="feature reveal">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h3>어디에 연락할지까지</h3>
+      <p>도움받을 수 있는 공식 기관의 전화번호를 정확하게 안내해 드려요. 어디부터 시작할지 막막하지 않아요.</p>
+    </article>
+    <article class="feature reveal">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><path d="M4 20h4l10-10a2.8 2.8 0 00-4-4L4 16v4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+      </div>
+      <h3>바로 쓰는 문서 초안</h3>
+      <p>내용증명·진정서처럼 필요한 문서의 초안을 만들어 드려요. 실제 문제 해결까지 한 걸음 더 도와드립니다.</p>
+    </article>
+  </div>
+
+  <div class="section-head reveal">
+    <span class="kicker">이용 방법</span>
+    <h2>3단계면 충분해요</h2>
+  </div>
+  <div class="steps reveal">
+    <div class="step">
+      <span class="step-num">1</span>
+      <h4>고민을 적어요</h4>
+      <p>“알바비를 못 받았어요”처럼 평소 쓰는 말로 적으면 돼요.</p>
+    </div>
+    <div class="step-arrow">→</div>
+    <div class="step">
+      <span class="step-num">2</span>
+      <h4>법령을 찾아드려요</h4>
+      <p>질문에 맞는 현행 법령 조문을 AI가 검색해요.</p>
+    </div>
+    <div class="step-arrow">→</div>
+    <div class="step">
+      <span class="step-num">3</span>
+      <h4>쉽게 알려드려요</h4>
+      <p>쉬운 설명 + 근거 조문 + 공식 연락처 + 문서 초안까지.</p>
+    </div>
+  </div>
+
+  <div class="cta-band reveal">
+    <h2>지금, 막막한 고민을 물어보세요</h2>
+    <p>몇 초면 충분해요. 회원가입도, 비용도 없어요.</p>
+    <button class="btn btn-cta" onclick="focusHero()">상담 시작하기
+      <svg viewBox="0 0 24 24" class="ic-sm"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
 </section>
 
-<div id="status" class="hidden"></div>
-<div id="tags" class="hidden"></div>
-<div id="cards"></div>
+<section id="consult" class="hidden">
+  <button class="back" onclick="backToLanding()">
+    <svg viewBox="0 0 24 24" class="ic-sm"><path d="M19 12H5M11 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    처음으로
+  </button>
+
+  <h2 class="ask-title">무엇을 도와드릴까요?</h2>
+  <p class="ask-help">법을 잘 몰라도 괜찮아요. 어떤 상황인지 편하게 적어주시면 AI가 상담 내용과 현행 법령을 찾아 쉽게 알려드릴게요.</p>
+
+  <div class="ask">
+    <svg viewBox="0 0 24 24" class="ask-ic"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <input id="q" type="text" maxlength="500"
+           placeholder="어떤 상황인지 편하게 적어주세요. 예: 알바비를 못 받았어요">
+    <button id="go" onclick="consult()">상담</button>
+  </div>
+  <div class="ask-meta hidden" id="askmeta">
+    <span class="followup-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      답변에 이어서 더 물어볼 수 있어요 (예: “그건 며칠 안에 가능해?”)
+    </span>
+    <button class="reset-link" type="button" onclick="resetThread()">＋ 새 상담</button>
+  </div>
+
+  <div id="status" class="hidden"></div>
+  <div id="tags" class="hidden"></div>
+  <div id="cards" class="thread"></div>
+</section>
 
 <script>
-async function consult() {
-  const q = document.getElementById("q").value.trim();
-  if (q.length < 2) return alert("질문을 입력해주세요");
-  setStatus("분야 분석 및 법령 검색 중...");
+// ── 멀티턴 상담 세션 상태 ───────────────────────────────
+// session_id가 있으면 서버가 직전 대화로 후속질문을 재작성한다(app/contextualize.py).
+let _sessionId = null;
+let _turnSeq = 0;
+
+function newSession() {
+  _sessionId = "s-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  _turnSeq = 0;
+}
+function clearServerSession(id) {
+  if (!id) return;
+  fetch(`/api/session/${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {});
+}
+function resetThread() {
+  clearServerSession(_sessionId);
   document.getElementById("cards").innerHTML = "";
+  document.getElementById("askmeta").classList.add("hidden");
+  _sessionId = null; _turnSeq = 0;
+  document.getElementById("q").focus();
+}
+function appendUserTurn(q, turnIdx) {
+  const div = document.createElement("div");
+  div.className = "turn turn-user";
+  div.dataset.turn = turnIdx;
+  div.setAttribute("role", "button");
+  div.title = "눌러서 답변 접기/펼치기";
+  div.onclick = () => toggleTurn(turnIdx);
+  div.innerHTML =
+    `<button class="turn-toggle" type="button" tabindex="-1" aria-label="답변 접기/펼치기">` +
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" ` +
+    `stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>` +
+    `<div class="bubble-q">${escapeHtml(q)}</div>`;
+  document.getElementById("cards").appendChild(div);
+  div.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+// 질문 말풍선 클릭 → 해당 턴 답변 카드 접기/펼치기 (긴 스레드 정리)
+function toggleTurn(turnIdx) {
+  const a = document.querySelector(`.turn-assistant[data-turn="${turnIdx}"]`);
+  const u = document.querySelector(`.turn-user[data-turn="${turnIdx}"]`);
+  if (!a) return;
+  const collapsed = a.classList.toggle("collapsed");
+  if (u) u.classList.toggle("collapsed", collapsed);
+}
+function appendThinking() {
+  const div = document.createElement("div");
+  div.className = "turn turn-thinking";
+  div.innerHTML = `<div class="thinking"><span class="thinking-step"></span></div>`;
+  document.getElementById("cards").appendChild(div);
+  return div;
+}
+
+function startConsult() {
+  document.getElementById("landing").classList.add("hidden");
+  document.getElementById("consult").classList.remove("hidden");
+  window.scrollTo({ top: 0, behavior: "instant" });
+  document.getElementById("q").focus();
+}
+
+function startWith(text) {
+  startConsult();
+  document.getElementById("q").value = text;
+}
+
+// 히어로 입력창에서 바로 제출 → 결과(상담) 화면으로 직행
+function askFromHero() {
+  const hq = document.getElementById("hq");
+  const q = hq.value.trim();
+  if (q.length < 2) { hq.focus(); return; }
+  document.getElementById("q").value = q;
+  startConsult();
+  consult();
+}
+// 예시 칩 클릭 → 즉시 질문 실행
+function askWith(text) {
+  document.getElementById("q").value = text;
+  startConsult();
+  consult();
+}
+// CTA 밴드 → 히어로 입력창으로 데려가 포커스
+function focusHero() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  setTimeout(() => document.getElementById("hq").focus(), 320);
+}
+
+function backToLanding() {
+  clearServerSession(_sessionId);
+  document.getElementById("consult").classList.add("hidden");
+  document.getElementById("landing").classList.remove("hidden");
+  document.getElementById("cards").innerHTML = "";
+  document.getElementById("tags").classList.add("hidden");
+  document.getElementById("askmeta").classList.add("hidden");
+  _sessionId = null; _turnSeq = 0;
+  setStatus("");
+}
+
+async function consult() {
+  const input = document.getElementById("q");
+  const q = input.value.trim();
+  if (q.length < 2) return alert("질문을 입력해주세요");
+  if (!_sessionId) newSession();              // 첫 턴에 세션 시작
+  const turnIdx = ++_turnSeq;
+  input.value = "";
+  appendUserTurn(q, turnIdx);                 // 사용자 질문 말풍선(스레드에 누적)
+  const thinking = appendThinking();          // 로딩 스텝퍼를 스레드 하단에
+  startStepper(thinking.querySelector(".thinking-step"));
+  document.getElementById("askmeta").classList.remove("hidden");
   try {
     const res = await fetch("/api/consult", {
       method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({question: q}),
+      body: JSON.stringify({question: q, session_id: _sessionId}),
     });
-    render(await res.json(), q);
-  } catch (e) { setStatus("오류가 발생했습니다: " + e); }
+    const data = await res.json();
+    stopStepper();
+    thinking.remove();
+    renderTurn(data, turnIdx, q);
+  } catch (e) {
+    stopStepper();
+    thinking.querySelector(".thinking-step").innerHTML =
+      `<span class="turn-error">오류가 발생했습니다: ${escapeHtml(String(e))}</span>`;
+  }
 }
+
+// 로딩 3단계 스텝퍼 — 실제 단계 진행을 알 수 없어 시간차로 자연스럽게 전진
+const STEPS = ["분야 분석", "법령 검색", "답변 생성"];
+let _stepTimer = null;
+function stepperHtml(active) {
+  return '<div class="stepper">' + STEPS.map((s, i) => {
+    const state = i < active ? "done" : (i === active ? "active" : "pending");
+    const ic = state === "done"
+      ? '<span class="step-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></span>'
+      : state === "active"
+        ? '<span class="step-ic"><span class="spinner"></span></span>'
+        : '<span class="step-ic"><span class="step-dot"></span></span>';
+    return (i ? '<span class="step-sep"></span>' : "") +
+      `<span class="step-item ${state}">${ic}${s}</span>`;
+  }).join("") + "</div>";
+}
+function startStepper(el) {
+  let i = 0;
+  el.innerHTML = stepperHtml(0);
+  clearInterval(_stepTimer);
+  _stepTimer = setInterval(() => {
+    i += 1;
+    if (i >= STEPS.length - 1) { el.innerHTML = stepperHtml(STEPS.length - 1); clearInterval(_stepTimer); }
+    else { el.innerHTML = stepperHtml(i); }
+  }, 850);
+}
+function stopStepper() { clearInterval(_stepTimer); }
 
 function setStatus(msg) {
   const el = document.getElementById("status");
-  el.textContent = msg; el.classList.toggle("hidden", !msg);
+  if (msg) {
+    el.innerHTML = `<span class="spinner"></span>${msg}`;
+    el.classList.remove("hidden");
+  } else {
+    el.textContent = ""; el.classList.add("hidden");
+  }
 }
 
-function render(data, q) {
-  setStatus("");
-  const tags = document.getElementById("tags");
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+// 인라인 마크다운: **굵게** · `코드`. 그 외 잔여 마크다운 기호는 정리.
+function inlineMd(s) {
+  return s
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>");
+}
+
+// 한국어 종결어미(다./요./죠.) 뒤에서 문장 분리 → 문장별 <p> (꼬리 누락 없음)
+function toParagraphs(s) {
+  return s.replace(/([다요죠][.!?])\s+/g, "$1\n")
+    .split("\n").map(x => x.trim()).filter(Boolean)
+    .map(x => `<p>${inlineMd(x)}</p>`).join("");
+}
+
+// 마크다운 표 → 깔끔한 <table> (구분행 |---| 은 건너뜀)
+function mdTable(rows) {
+  if (!rows.length) return "";
+  const cells = r => r.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+  const head = cells(rows[0]);
+  const body = rows.slice(1).map(cells);
+  let h = "<table class='ans-table'><thead><tr>" +
+    head.map(c => `<th>${inlineMd(c)}</th>`).join("") + "</tr></thead>";
+  if (body.length) {
+    h += "<tbody>" + body.map(r =>
+      "<tr>" + r.map(c => `<td>${inlineMd(c)}</td>`).join("") + "</tr>").join("") + "</tbody>";
+  }
+  return h + "</table>";
+}
+
+// LLM 답변 가독성: 마크다운(## 제목·표·목록)을 날 기호 없이 깔끔한 HTML로 렌더.
+function formatAnswer(text) {
+  const t = escapeHtml(text).replace(/\r/g, "").trim();
+  const isTbl = l => /^\s*\|.*\|\s*$/.test(l);
+  const isSep = l => /^\s*\|?[\s:|-]+\|?\s*$/.test(l) && l.includes("-");
+  const isHr = l => /^\s*([-*_])\1{2,}\s*$/.test(l);
+  const isItem = l => /^\s*(#{1,6}\s|[-*+]\s|\d+\.\s)/.test(l);
+
+  // 줄바꿈 없는 한 덩어리 + 인라인 번호목록(" 1. … 2. …")은 줄로 분해
+  if (!t.includes("\n")) {
+    const m = t.match(/(^|\s)\d+\.\s/g) || [];
+    if (m.length >= 2) {
+      const i = t.search(/(^|\s)\d+\.\s/);
+      const intro = t.slice(0, i).trim();
+      const items = t.slice(i).split(/\s*\d+\.\s+/).filter(x => x.trim());
+      return (intro ? toParagraphs(intro) : "") + "<ol class='ans-list'>" +
+        items.map(x => `<li>${inlineMd(x.trim())}</li>`).join("") + "</ol>";
+    }
+    return toParagraphs(t) || `<p>${inlineMd(t)}</p>`;
+  }
+
+  const lines = t.split("\n");
+  let html = "", i = 0;
+  while (i < lines.length) {
+    const l = lines[i];
+    if (!l.trim()) { i++; continue; }
+    const h = l.match(/^\s*#{1,6}\s+(.*)$/);
+    if (h) { html += `<div class="ans-h">${inlineMd(h[1].trim())}</div>`; i++; continue; }
+    if (isHr(l)) { i++; continue; }
+    if (isTbl(l)) {
+      const rows = [];
+      while (i < lines.length && isTbl(lines[i])) {
+        if (!isSep(lines[i])) rows.push(lines[i]);
+        i++;
+      }
+      html += mdTable(rows); continue;
+    }
+    if (/^\s*[-*+]\s+/.test(l)) {
+      const items = [];
+      while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^\s*[-*+]\s+/, "")); i++;
+      }
+      html += "<ul class='ans-ul'>" +
+        items.map(x => `<li>${inlineMd(x.trim())}</li>`).join("") + "</ul>";
+      continue;
+    }
+    if (/^\s*\d+\.\s+/.test(l)) {
+      const items = [];
+      while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^\s*\d+\.\s+/, "")); i++;
+      }
+      html += "<ol class='ans-list'>" +
+        items.map(x => `<li>${inlineMd(x.trim())}</li>`).join("") + "</ol>";
+      continue;
+    }
+    // 일반 문단: 연속 텍스트 줄을 모아 문장 단위로
+    const buf = [];
+    while (i < lines.length && lines[i].trim() && !isTbl(lines[i]) && !isHr(lines[i]) &&
+           !isItem(lines[i])) {
+      buf.push(lines[i].trim()); i++;
+    }
+    html += toParagraphs(buf.join(" "));
+  }
+  return html || toParagraphs(t);
+}
+
+// 조문 원문 가독성: 항(①)·호(1.)·목(가.) 계층으로 분리해 들여쓰기
+function formatSnippet(text) {
+  let t = inlineMd(escapeHtml(text).trim());
+  t = t.replace(/\s*([①-⑳])/g, "\n$1");                                              // 항
+  t = t.replace(/\s+([1-9]\d?\.)(\s+)(?=[가-힣「『"'(])/g, "\n$1$2");                  // 호(뒤에 한글이 와야 — 날짜 배제)
+  t = t.replace(/\s+([가나다라마바사아자차카타파하]\.)(\s+)(?=[가-힣「『"'(])/g, "\n$1$2"); // 목
+  return t.split("\n").map(x => x.trim()).filter(Boolean).map(line => {
+    let cls = "law-lead";
+    if (/^[①-⑳]/.test(line)) cls = "law-hang";
+    else if (/^[1-9]\d?\.\s/.test(line)) cls = "law-ho";
+    else if (/^[가나다라마바사아자차카타파하]\.\s/.test(line)) cls = "law-mok";
+    return `<span class="${cls}">${line}</span>`;
+  }).join("");
+}
+
+function renderTurn(data, turnIdx, q) {
+  const wrap = document.createElement("div");
+  wrap.className = "turn turn-assistant";
+  wrap.dataset.turn = turnIdx;
+  // 문서초안은 재작성된(맥락 포함) 질문 기준으로 — 후속질문이면 단독으론 부족하므로
+  const dq = data.rewritten_question || q;
+
+  // 후속질문 재작성 안내 — 멀티턴이 동작했음을 보여주는 신뢰 포인트
+  let head = "";
+  if (data.rewritten_question) {
+    head += `<div class="rewrite-hint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 019-9 9 9 0 016.7 3L21 8"/><path d="M21 3v5h-5"/></svg>
+      이어진 질문으로 이해했어요 — <b>${escapeHtml(data.rewritten_question)}</b></div>`;
+  }
+
   if (!data.in_scope) {
-    tags.classList.add("hidden");
-    document.getElementById("cards").innerHTML =
-      `<div class="card out">${data.final_answer}</div>`;
+    wrap.innerHTML = head +
+      `<div class="card out"><div class="out-ic">!</div><p>${escapeHtml(data.final_answer)}</p></div>`;
+    document.getElementById("cards").appendChild(wrap);
+    wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
     return;
   }
-  tags.classList.remove("hidden");
-  tags.innerHTML = "이 질문을 다음 분야로 분석했습니다: " +
-    data.domains.map(d => `<span class="tag">${d.name}</span>`).join(" ");
 
-  document.getElementById("cards").innerHTML = data.answer_blocks.map(b => `
-    <div class="card">
-      <h3>【${b.domain_kr} 분야】</h3>
-      <p>${b.answer}</p>
-      ${b.citations.map(c => `
-        <div class="cite">
-          <b>${c.law_name} ${c.article}</b>
-          <span class="date">시행 ${c.enforced_date}</span>
-          <p class="snippet">"${c.text}"</p>
-          <a href="${c.source_url}" target="_blank">전문 보기 ↗</a>
-        </div>`).join("")}
-      ${b.contacts.map(ct => `
-        <div class="contact">☎ ${ct.org} <b>${ct.phone}</b> <span>(${ct.note})</span></div>`).join("")}
-      <button class="draft" onclick="makeDraft('${b.domain}', ${JSON.stringify(q).replace(/"/g, "&quot;")})">
-        📄 ${b.domain_kr} 문서 초안 생성</button>
-      <pre class="draft-out hidden" id="draft-${b.domain}"></pre>
-    </div>`).join("");
+  head += `<div class="turn-tags"><span class="tags-label">분석된 분야</span>` +
+    data.domains.map(d => `<span class="tag"><span class="dot"></span>${d.name}</span>`).join("") +
+    `</div>`;
+
+  wrap.innerHTML = head + data.answer_blocks.map((b, bi) => {
+    const key = `${turnIdx}-${bi}-${b.domain}`;
+    return `
+    <article class="card">
+      <header class="card-head">
+        <span class="card-domain">${b.domain_kr}</span>
+        <span class="card-label">관련 법령 안내</span>
+      </header>
+      <section class="card-section">
+        <div class="block-title">
+          <span class="block-ic"><svg viewBox="0 0 24 24"><path d="M12 2l1.7 4.6L18 8l-4.3 1.4L12 14l-1.7-4.6L6 8l4.3-1.4L12 2z" fill="currentColor"/><path d="M18.5 13l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9.9-2.1z" fill="currentColor"/></svg></span>
+          AI 상담 해석
+          <button class="copy-btn" type="button" onclick="copyAnswer(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>복사
+          </button>
+        </div>
+        <p class="answer-caption">아래 근거 법령을 바탕으로 AI가 정리한 해석이에요.</p>
+        <div class="answer">${formatAnswer(b.answer)}</div>
+      </section>
+
+      <section class="card-section">
+        <div class="block-title">
+          <span class="block-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 3h7l5 5v12a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" stroke-linejoin="round"/><path d="M14 3v5h5M9 13h6M9 16.5h4" stroke-linecap="round"/></svg></span>
+          근거 법령
+        </div>
+        <div class="cites">
+          ${b.citations.map(c => `
+          <details class="cite">
+            <summary>
+              <span class="cite-head">
+                <span class="cite-mark">§</span>
+                <span class="cite-meta">
+                  <span class="cite-article">${c.article}</span>
+                  <span class="cite-law">${c.law_name}</span>
+                </span>
+              </span>
+              <span class="date">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>
+                시행 ${fmtDate(c.enforced_date)}
+              </span>
+            </summary>
+            <div class="snippet">${formatSnippet(c.text)}</div>
+            <a class="cite-link" href="${c.source_url}" target="_blank" rel="noopener">국가법령정보센터에서 전문 보기 ↗</a>
+          </details>`).join("")}
+        </div>
+      </section>
+
+      <section class="card-section">
+        <div class="block-title">
+          <span class="block-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 4h3.5l1.8 4.5-2.3 1.4a12 12 0 005.1 5.1l1.4-2.3 4.5 1.8V18a2 2 0 01-2 2A15 15 0 014 6a2 2 0 011-2z" stroke-linejoin="round"/></svg></span>
+          공식 연락처
+        </div>
+        <div class="contacts">
+          ${b.contacts.map(ct => `
+          <div class="contact">
+            <span class="contact-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h3.5l1.6 4-2 1.4a11 11 0 005 5l1.4-2 4 1.6V18a2 2 0 01-2 2A15 15 0 014 6a2 2 0 011-2z"/></svg></span>
+            <div><b>${ct.org}</b> <span class="phone">${ct.phone}</span><br><span class="note">${ct.note}</span></div>
+          </div>`).join("")}
+        </div>
+      </section>
+
+      <button class="btn btn-outline" onclick="makeDraft('${key}', '${b.domain}', ${JSON.stringify(dq).replace(/"/g, "&quot;")})">
+        <svg class="ic-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M14 3v5h5M9 13h6M9 16h4"/></svg>
+        ${b.domain_kr} 문서 초안 생성</button>
+      <div class="draft-doc hidden" id="draftdoc-${key}">
+        <div class="draft-doc-head">
+          <span class="draft-doc-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M14 3v5h5M9 13h6M9 16h4"/></svg>
+            문서 초안
+          </span>
+          <button class="copy-btn" type="button" onclick="copyDraft('${key}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>복사
+          </button>
+        </div>
+        <pre class="draft-doc-body" id="draft-${key}"></pre>
+      </div>
+    </article>`;
+  }).join("");
+
+  document.getElementById("cards").appendChild(wrap);
+  revealAnswers(wrap);
+  wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-async function makeDraft(domain, q) {
-  const out = document.getElementById("draft-" + domain);
-  out.classList.remove("hidden"); out.textContent = "초안 작성 중...";
+function fmtDate(s) {
+  if (s && /^\d{8}$/.test(s)) return `${s.slice(0,4)}.${s.slice(4,6)}.${s.slice(6,8)}`;
+  return s;
+}
+
+async function makeDraft(key, domain, q) {
+  const out = document.getElementById("draft-" + key);
+  document.getElementById("draftdoc-" + key).classList.remove("hidden");
+  out.textContent = "초안 작성 중...";
   const res = await fetch("/api/draft", {
     method: "POST", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({question: q, domain: domain}),
@@ -73,7 +569,129 @@ async function makeDraft(domain, q) {
   out.textContent = d.body + "\n\n" + d.guide;
 }
 
+// ── 복사 + 토스트 ──────────────────────────────────────
+function copyText(text) {
+  const ok = () => showToast("복사됐어요");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(ok).catch(() => fallbackCopy(text, ok));
+  } else { fallbackCopy(text, ok); }
+}
+function fallbackCopy(text, ok) {
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); ok(); } catch (e) {}
+  document.body.removeChild(ta);
+}
+let _toastTimer = null;
+function showToast(msg) {
+  let t = document.getElementById("toast");
+  if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); }
+  t.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>' + msg;
+  requestAnimationFrame(() => t.classList.add("show"));
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+}
+function copyAnswer(btn) {
+  const a = btn.closest(".card-section").querySelector(".answer");
+  if (a) copyText(a.innerText.trim());
+}
+function copyDraft(key) {
+  const p = document.getElementById("draft-" + key);
+  if (p) copyText(p.textContent.trim());
+}
+
+// ── 답변 단어 단위 reveal (타이핑 느낌) ─────────────────
+// 서식(굵게·목록)을 보존하려고 텍스트 노드의 '단어'만 <span>으로 감싸 순차 노출
+function typewriteElement(el, done) {
+  const nodes = [];
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  const spans = [];
+  nodes.forEach(node => {
+    const frag = document.createDocumentFragment();
+    node.textContent.split(/(\s+)/).forEach(part => {
+      if (!part) return;
+      if (!part.trim()) { frag.appendChild(document.createTextNode(part)); return; }
+      const s = document.createElement("span");
+      s.className = "w"; s.textContent = part;
+      frag.appendChild(s); spans.push(s);
+    });
+    node.parentNode.replaceChild(frag, node);
+  });
+  let i = 0;
+  (function step() {
+    if (i >= spans.length) { done && done(); return; }
+    spans[i].classList.add("on"); i += 1;
+    setTimeout(step, 22);
+  })();
+}
+function revealAnswers(root) {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  (root || document).querySelectorAll(".card").forEach(card => {
+    const answer = card.querySelector(".answer");
+    if (!answer || reduce) return;
+    const later = [...card.querySelectorAll(".card-section")].slice(1);
+    const gen = card.querySelector(".btn-outline");
+    if (gen) later.push(gen);
+    later.forEach(e => { e.style.opacity = "0"; e.style.transform = "translateY(8px)"; });
+    typewriteElement(answer, () => {
+      later.forEach((e, i) => setTimeout(() => {
+        e.style.transition = "opacity .45s ease, transform .45s ease";
+        e.style.opacity = "1"; e.style.transform = "none";
+      }, i * 130));
+    });
+  });
+}
+
+// ── 검색창 동적 타이핑 placeholder ──────────────────────
+const PH_EXAMPLES = [
+  "알바비를 못 받았어요",
+  "전세 보증금을 안 돌려줘요",
+  "인터넷으로 산 옷을 환불하고 싶어요",
+  "대출 연체로 독촉 전화가 와요",
+  "계약서도 없이 일했는데 괜찮을까요?",
+];
+function initPlaceholderTyper() {
+  const el = document.getElementById("hq");
+  if (!el) return;
+  let idx = 0, ch = 0, deleting = false, paused = false;
+  el.addEventListener("focus", () => { paused = true; el.placeholder = "어떤 상황인지 편하게 적어주세요"; });
+  el.addEventListener("blur", () => { if (!el.value) { paused = false; ch = 0; deleting = false; } });
+  (function tick() {
+    if (paused || el.value) { setTimeout(tick, 400); return; }
+    const full = PH_EXAMPLES[idx];
+    if (!deleting) {
+      ch += 1; el.placeholder = "예: " + full.slice(0, ch) + "▌";
+      if (ch >= full.length) { deleting = true; setTimeout(tick, 1400); return; }
+      setTimeout(tick, 55);
+    } else {
+      ch -= 1; el.placeholder = "예: " + full.slice(0, ch) + "▌";
+      if (ch <= 0) { deleting = false; idx = (idx + 1) % PH_EXAMPLES.length; setTimeout(tick, 250); return; }
+      setTimeout(tick, 28);
+    }
+  })();
+}
+initPlaceholderTyper();
+
 document.getElementById("q").addEventListener("keydown",
   e => { if (e.key === "Enter") consult(); });
+document.getElementById("hq").addEventListener("keydown",
+  e => { if (e.key === "Enter") askFromHero(); });
+
+// 스크롤 시 등장 애니메이션 (뷰포트 진입 시 .in 부여)
+(function initReveal() {
+  const els = document.querySelectorAll(".reveal");
+  if (!("IntersectionObserver" in window)) {
+    els.forEach(el => el.classList.add("in"));
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+  els.forEach(el => io.observe(el));
+})();
 </script>
 {% endblock %}

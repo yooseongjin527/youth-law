@@ -25,7 +25,7 @@ data/                         # ★ .gitignore — 각자 build_index로 생성 
 │   ├── consumer/<법령명>.xml
 │   ├── labor/   housing/   finance/
 ├── silver/                   # 2단계: 조문 청크 (1줄=1조문)
-│   └── <분야>.jsonl          # 현재(8개 법령): labor 166 / housing 42 / consumer 58 / finance 812
+│   └── <분야>.jsonl          # 현재(10개 법령): labor 166 / housing 42 / consumer 192 / finance 812
 ├── chroma/                   # 3단계(Gold): 벡터DB
 │   ├── chroma.sqlite3        # 문서·메타·임베딩 본체
 │   └── <uuid>/ × 4           # 분야별 HNSW 인덱스 폴더
@@ -82,6 +82,7 @@ metadata  = {law_name, article, enforced_date, source_url}
 ```
 - 실체: `data/chroma/chroma.sqlite3` + 분야별 HNSW 인덱스 폴더
 - **id가 `법령명_제N조`** 라 같은 조문 재적재 시 덮어씀 → 증분 갱신과 자연 호환
+- 백엔드는 env `RAG_BACKEND`로 선택(common/rag.py와 한 쌍): 로컬·CI는 **Chroma**, EC2 운영은 **RDS pgvector**(`law_chunks` 테이블, gold.py `load_pgvector` — 분야별 삭제 후 삽입으로 멱등). 같은 silver를 양쪽에 적재.
 
 ### 📋 4. Manifest — `pipeline/detect.py`
 적재한 법령의 시행일을 기록 → 증분 감지의 기준.

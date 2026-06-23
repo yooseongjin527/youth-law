@@ -1,0 +1,24 @@
+# EC2 실서버용 의존성 — 실검색(Chroma+임베딩) · RDS 로깅 · S3 백업까지 포함.
+# 로컬/CI는 requirements.txt만으로 충분하다(common/rag.py가 stub 폴백).
+# EC2에서만 아래로 설치한다:
+#   python3.11 -m venv .venv && source .venv/bin/activate
+#   pip install --upgrade pip
+#   pip install -r requirements-ec2.txt
+#
+# ⚠️ Airflow는 여기 넣지 않는다. apache-airflow는 엄격한 constraints가 있어 같이 풀면
+#    의존성 충돌이 난다. EC2 가이드(4. Airflow)대로 constraint URL로 별도 설치한다.
+
+-r requirements.txt
+
+# --- 실검색: rag.py가 chromadb+임베딩이 있으면 실제 임베딩 검색 모드로 동작 ---
+chromadb
+sentence-transformers
+rank-bm25          # 하이브리드 검색(BM25 + 임베딩)
+kiwipiepy          # 한국어 형태소 분석(BM25 토크나이징)
+
+# --- RDS PostgreSQL 로깅: common/db.py가 DATABASE_URL 설정 시 사용 ---
+psycopg[binary]
+sqlalchemy
+
+# --- S3 백업: scripts/sync_s3.sh의 aws CLI. boto3는 requirements.txt에 이미 포함 ---
+awscli

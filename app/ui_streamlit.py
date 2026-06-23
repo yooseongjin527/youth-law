@@ -22,7 +22,7 @@ st.title("⚖️ 청년 생활법률 상담 AI")
 st.caption("노동 · 주택 · 소비자 · 금융 — 현행 법령 근거로, 출처와 연락처까지")
 
 question = st.text_input(
-    "법률 고민을 평어로 적어주세요",
+    "어떤 상황인지 편하게 적어주세요 (법을 잘 몰라도 괜찮아요)",
     placeholder="예: 알바비를 못 받았어요 / 전세 보증금을 안 돌려줘요",
     max_chars=500,
 )
@@ -62,4 +62,6 @@ if st.button("상담", type="primary") and len(question.strip()) >= 2:
             st.json(result["verification_report"])
 
 st.divider()
-st.caption("국가법령정보센터 현행 법령 기반 일반 정보 안내입니다. 구체적 사건은 전문가와 상담하세요.")
+st.caption(
+    "국가법령정보센터 현행 법령 기반 일반 정보 안내입니다. 구체적 사건은 전문가와 상담하세요."
+)
