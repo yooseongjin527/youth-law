@@ -10,6 +10,7 @@
 - finance smoke: `evals/finance.jsonl` (회귀/스모크용)
 - finance benchmark: `evals/finance_benchmark.jsonl` (확장 평가용)
 - finance는 하위 법군이 많아 category별 리포트를 같이 보는 걸 권장
+- consumer는 3법(전자상거래·방문판매·할부) 라우팅을 쓰므로 법별 균형 평가셋 권장 — 현재 법당 20문항(총 60). evaluate.py가 agents.consumer._route_law로 검색 시 법을 라우팅한다(프로덕션 경로 일치)
 
 실행: `python scripts/evaluate.py labor`
 금융 benchmark 실행: `python scripts/evaluate.py finance benchmark`

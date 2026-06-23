@@ -15,6 +15,7 @@ import os
 import sys
 from pathlib import Path
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
@@ -22,9 +23,56 @@ from dotenv import load_dotenv
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv()
 
+import re  # noqa: E402
+
 from common import db  # noqa: E402
+from common.cost import MODEL_TIERS  # noqa: E402
 
 st.set_page_config(page_title="청년 법률상담 — 운영 대시보드", page_icon="📊", layout="wide")
+
+# tier(main/small) → 실제 모델. MODEL_TIERS는 .env의 BEDROCK_MODEL_MAIN/SMALL을 읽는다.
+_TIER_MODEL = {"small": MODEL_TIERS.get("classify", ""), "main": MODEL_TIERS.get("answer", "")}
+
+
+def _model_short(model_id: str) -> str:
+    """모델 ID를 사람이 읽는 짧은 이름으로. 예) us.anthropic.claude-sonnet-4-6-v1:0 → Sonnet 4.6"""
+    if not model_id:
+        return "?"
+    low = model_id.lower()
+    fam = next((f for f in ("opus", "sonnet", "haiku") if f in low), None)
+    if fam:
+        m = re.search(fam + r"[-.]?(\d+)[-.](\d+)", low)
+        return f"{fam.capitalize()} {m.group(1)}.{m.group(2)}" if m else fam.capitalize()
+    return model_id.split(".")[-1].split(":")[0]  # 폴백: 정리된 ID
+
+
+def _tier_label(tier: str) -> str:
+    """'main' → 'main · Sonnet 4.6' 처럼 tier 옆에 실제 모델을 함께 표기."""
+    short = _model_short(_TIER_MODEL.get(tier, ""))
+    return f"{tier} · {short}" if short != "?" else tier
+
+
+def bar_chart(series: pd.Series, cat: str = "항목", val: str = "값", horizontal: bool = False):
+    """막대그래프 — 카테고리 라벨을 가로(0°)로 고정해 렌더.
+
+    st.bar_chart는 긴 한글 라벨을 세로로 회전시켜 가독성이 떨어진다 → Altair로 직접
+    그려 labelAngle=0을 강제한다. 라벨이 길거나 많으면 horizontal=True(가로 막대)로.
+    """
+    df = series.rename_axis(cat).reset_index(name=val)
+    base = alt.Chart(df).mark_bar()
+    if horizontal:
+        chart = base.encode(
+            y=alt.Y(f"{cat}:N", sort="-x", axis=alt.Axis(labelAngle=0, title=None)),
+            x=alt.X(f"{val}:Q", axis=alt.Axis(title=None)),
+            tooltip=[cat, val],
+        )
+    else:
+        chart = base.encode(
+            x=alt.X(f"{cat}:N", sort="-y", axis=alt.Axis(labelAngle=0, title=None)),
+            y=alt.Y(f"{val}:Q", axis=alt.Axis(title=None)),
+            tooltip=[cat, val],
+        )
+    st.altair_chart(chart, use_container_width=True)
 
 
 @st.cache_data(ttl=30)
@@ -97,7 +145,7 @@ with o1:
             flat.extend(ds if isinstance(ds, (list, tuple)) else [ds])
         if flat:
             dist = pd.Series(flat).value_counts()
-            st.bar_chart(dist)
+            bar_chart(dist, cat="분야", val="상담수")
         else:
             st.info("분야 데이터 없음")
     else:
@@ -120,18 +168,24 @@ st.divider()
 
 # ── ② 비용·토큰 ───────────────────────────────────────────────────────────
 st.subheader("② 비용 · 토큰")
+st.caption(
+    f"모델 티어 — **main** = {_model_short(_TIER_MODEL['main'])} "
+    f"(답변·문서초안) · **small** = {_model_short(_TIER_MODEL['small'])} (분류·검증)"
+)
 if usage.empty:
     st.info("사용량 로그 없음")
 else:
     u1, u2, u3 = st.columns(3)
     with u1:
         st.caption("task별 비용 ($)")
-        st.bar_chart(usage.groupby("task")["cost_usd"].sum())
+        bar_chart(usage.groupby("task")["cost_usd"].sum(), cat="task", val="비용($)")
     with u2:
         st.caption("tier별 토큰 (입력+출력)")
         u = usage.copy()
         u["tokens"] = u["input_tokens"].fillna(0) + u["output_tokens"].fillna(0)
-        st.bar_chart(u.groupby("tier")["tokens"].sum())
+        by_tier = u.groupby("tier")["tokens"].sum()
+        by_tier.index = [_tier_label(t) for t in by_tier.index]  # main/small 옆에 실제 모델
+        bar_chart(by_tier, cat="tier (모델)", val="토큰", horizontal=True)
     with u3:
         st.caption("일별 비용 ($)")
         u = usage.copy()
@@ -217,7 +271,8 @@ else:
         ls1, ls2 = st.columns([2, 3])
         with ls1:
             st.caption("노드별 평균 레이턴시 (초) — 병목 진단")
-            st.bar_chart(by_node["평균초"])
+            # 노드명이 길고 여러 개 + 좁은 칼럼 → 가로 막대(라벨 가로·겹침 없음)
+            bar_chart(by_node["평균초"], cat="노드", val="평균초", horizontal=True)
         with ls2:
             st.caption("노드별 상세 (호출수·평균·최대·에러)")
             show = by_node.copy()

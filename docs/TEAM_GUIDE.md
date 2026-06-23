@@ -9,14 +9,14 @@
 
 | # | 리스크 | 왜 위험한가 | 해소 시점 |
 |---|---|---|---|
-| ① | ~~RAG 미구현~~ → ~~코드 구현~~ → **실데이터 구축·실검색 검증 완료** (로컬 4분야 1078조문, is_real=True) | (해소됨) | **로컬 검증 완료 — EC2에서 `build_index.py all` 1회만 남음** |
+| ① | ~~RAG 미구현~~ → ~~코드 구현~~ → **실데이터 구축·실검색 검증 완료** (4분야 1,212조문, is_real=True; 로컬 Chroma·EC2 RDS pgvector) | (해소됨) | **로컬·EC2 적재 완료** |
 | ② | ~~데이터 소스 이원화 리스크~~ → **단일 소스(국가법령정보센터)로 일원화** | (해소됨) | — |
 | ③ | Supervisor 키워드 분류 구멍 | 키워드 없는 자연어("나오지 말래요") 오탐 | Day3 Bedrock 분류 교체 (가능하면 당기기) |
 | ④ | Bedrock 실행 환경 미정 (계정/리전/모델ID/비용) | 코드보다 먼저 막히는 게 보통 이것 | **Day0~1에 invoke_model 1회 성공** |
 | ⑤ | 평가셋 없음 | Day5 "N% 개선" 발표가 불가능해짐 | **Day1~2에 분야별 평가질문 10~20개** |
 | ⑥ | ~~UI 골격 없음~~ → **구현 완료** (FastAPI 메인화면 + Streamlit 데모) | 남은 건 실데이터 확인·다듬기 | Day4 실데이터로 양쪽 UI 확인 |
 
-①은 **구축·검증 완료**: Chroma + jhgan/ko-sroberta-multitask (common/rag.py 실구현, pipeline/ medallion 적재). `build_index.py all`로 4분야 구축 검증(labor166/housing42/consumer58/finance812, 전 분야 is_real=True). 빌드 블로커 3건 수정(PR #1). 남은 일은 EC2 운영본 구축뿐 (docs/INFRA.md).
+①은 **구축·검증 완료**: Chroma/pgvector + jhgan/ko-sroberta-multitask (common/rag.py 실구현, pipeline/ medallion 적재). `build_index.py all`로 4분야 구축 검증(labor166/housing42/consumer192/finance812, 전 분야 is_real=True). 빌드 블로커 3건 수정(PR #1). EC2 운영본은 RDS pgvector로 적재 완료.
 
 ---
 

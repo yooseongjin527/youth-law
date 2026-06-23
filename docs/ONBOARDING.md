@@ -34,7 +34,7 @@ python scripts/build_index.py all
 ```
 ✓ gold: law_labor 컬렉션 166건 upsert
 ✓ gold: law_housing 컬렉션 42건 upsert
-✓ gold: law_consumer 컬렉션 58건 upsert
+✓ gold: law_consumer 컬렉션 192건 upsert
 ✓ gold: law_finance 컬렉션 812건 upsert
 ```
 

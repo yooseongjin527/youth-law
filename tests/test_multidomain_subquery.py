@@ -58,7 +58,7 @@ def _capture_search(monkeypatch, domain):
     """해당 분야 에이전트의 safe_search를 가로채 전달된 질의를 기록(빈 결과 반환→무네트워크)."""
     captured = {}
 
-    def fake(rag, query, k=3):
+    def fake(rag, query, k=3, **kwargs):
         captured["q"] = query
         return []  # 빈 검색결과 → no-chunks 경로 → LLM 호출 없음(결정적)
 

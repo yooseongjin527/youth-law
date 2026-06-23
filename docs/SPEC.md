@@ -64,18 +64,19 @@ labor housing consumer finance  │
 ## 5. 데이터 & RAG (검증 완료)
 - 근거 조문·검색 코퍼스: 국가법령정보센터 API. 현행 법령 + 시행일.
 - 정식 Open API → 크롤링 0. ⚠️ API 신청(OC)은 Day 0(수동 승인 1~2일).
-- 검색: common/rag.py DomainRAG (Chroma 실구현·stub 폴백). 적재: pipeline/ medallion + 증분 갱신(scripts/update_laws.py, 주1회). 고도화는 rag.py에서만(4분야 자동 적용).
+- 검색: common/rag.py DomainRAG (Chroma/pgvector 백엔드 + stub 폴백, env RAG_BACKEND). 적재: pipeline/ medallion + 증분 갱신(scripts/update_laws.py, 주1회). 검색 고도화는 rag.py에서만 — 하이브리드(BM25+쿼리확장)는 분야별 게이트(finance·labor), consumer는 분야 내 법 라우팅(_route_law).
 
 분야별 핵심 법령:
 | 분야 | 담당 | 핵심 법령 |
 |---|---|---|
 | labor | A | 근로기준법, 최저임금법 |
 | housing | B | 주택임대차보호법 |
-| consumer | C | 전자상거래소비자보호법 |
+| consumer | C | 전자상거래법, 방문판매법(구독·계속거래), 할부거래법(할부·상조) |
 | finance | D | 채무자회생법(개인회생·파산), 통신사기피해환급법(보이스피싱), 채권추심법·대부업법 |
 
 ## 6. 웹서비스 계약 (app/)
-- POST /api/consult {question, session_id?} → {domains, in_scope, final_answer, answer_blocks, verification_report}
+- POST /api/consult {question, session_id?} → {domains, in_scope, final_answer, answer_blocks, verification_report, rewritten_question?}
+  - session_id 있으면 멀티턴: 직전 대화로 후속 질문을 독립형으로 재작성(app/contextualize) 후 그래프 단발 투입. 재작성됐을 때만 rewritten_question 채움.
 - POST /api/draft {question, domain} → DocumentDraft
 - DELETE /api/session/{session_id} → {cleared}
 - UI(웹·Streamlit)는 answer_blocks 만 렌더링 — State 내부 구조에 직접 의존 금지 (service.py 경유)

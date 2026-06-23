@@ -10,6 +10,11 @@
   빈 답변은 None으로 떨궈 추출 폴백으로 보낸다(#4 빈 답 통과 방지).
 - 쿼리 확장(synonyms)은 **의도적으로 안 한다** — 홀드아웃 검증 결과 consumer는
   BM25·동의어 이득이 박빙이라 순수 임베딩 단독이 더 단순·합리적(rag_hybrid 미사용).
+- ★ 법 라우팅 ★: consumer는 전자상거래·방문판매(계속거래)·할부거래 3법을 다룬다.
+  세 법은 청약철회·계약해지 표현이 거의 동일해 한 통에 섞어 검색하면 서로 희석된다
+  (측정: hit@3 0.68→0.46). 그래서 질문 의도로 법을 1개 골라 그 법만 검색한다
+  (_route_law): "할부"→할부거래법, "구독/정기/멤버십/계속거래"→방문판매법, 그 외→전자상거래법.
+  덕분에 흔한 전자상거래 질문 정확도는 단일법 수준(0.68)으로 유지하면서 구독·할부도 커버.
 
 동작 모드 (어느 모드든 검색된 조문 밖 내용은 답변에 들어갈 수 없다 — 환각 방지):
   1) Bedrock 모드: common/llm.py 완성 시 자동 활성. 검색 조문만 근거로 생성하고
@@ -38,6 +43,28 @@ from common.rag import DomainRAG, RetrievedChunk
 from state import LegalState
 
 _rag = DomainRAG(domain="consumer", corpus_path="data/consumer")
+
+# ── 분야 내 법 라우팅 ──────────────────────────────────────────
+# 세 법은 청약철회·계약해지 언어가 거의 같아 섞어 검색하면 희석된다 → 의도로 1개 선택.
+_LAW_ECOMMERCE = "전자상거래 등에서의 소비자보호에 관한 법률"  # 기본(통신판매 청약철회·환불)
+_LAW_CONTINUOUS = "방문판매 등에 관한 법률"                    # 계속거래(구독) 해지
+_LAW_INSTALLMENT = "할부거래에 관한 법률"                      # 할부 청약철회·항변권
+# 트리거는 각 법 고유어로. "자동결제"는 다크패턴(전자상거래법)과 겹쳐 의도적으로 제외.
+_INSTALLMENT_KW = ("할부", "상조", "선불식", "항변")           # 할부거래법
+_DOOR_KW = (                                                  # 방문판매법
+    "방문판매", "전화권유", "다단계", "후원", "구독",
+    "정기결제", "정기구독", "정기배송", "멤버십", "계속거래", "회원권",
+)
+
+
+def _route_law(query: str) -> str:
+    """질문 의도로 검색할 법 1개를 고른다(기본: 전자상거래법). 할부거래법 우선 검사
+    ('선불식 할부'처럼 두 신호가 겹치면 할부거래법이 맞음)."""
+    if any(k in query for k in _INSTALLMENT_KW):
+        return _LAW_INSTALLMENT
+    if any(k in query for k in _DOOR_KW):
+        return _LAW_CONTINUOUS
+    return _LAW_ECOMMERCE
 
 # 검색 결과 자체가 없을 때 — 환각 없이 정직 거절(낮은 confidence로 verifier 탈락).
 _NO_CHUNKS = (
@@ -98,7 +125,8 @@ def _llm_answer(query: str, chunks: list[RetrievedChunk]) -> tuple[str, float] |
 
 def consumer_agent(state: LegalState) -> dict:
     query = domain_query(state, "consumer")  # 멀티도메인 분해 시 consumer 조각(없으면 전체질문)
-    chunks = safe_search(_rag, query, k=3)  # 베이스: 검색 크래시 방지(빈 리스트 폴백)
+    # 의도로 법 1개 선택 → 그 법만 검색(희석 방지). 기본은 전자상거래법.
+    chunks = safe_search(_rag, query, k=3, law=_route_law(query))
 
     if not chunks:
         # 빈 검색결과 → 인용 0건. verifier가 탈락시키고 planner가 정직 거절.
