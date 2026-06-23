@@ -28,6 +28,7 @@ TODO 우선순위 (담당 C)
 """
 from common.base_agent_answer import (
     build_domain_answer,
+    domain_query,
     domain_result,
     extractive_answer,
     safe_search,
@@ -57,6 +58,8 @@ _ANSWER_PROMPT = (
     "  · 0.7 이상: 질문에 답하는 내용이 위 조문에 분명히 들어 있음\n"
     "  · 0.5~0.7: 위 조문에 부분적으로 근거가 있어 일부라도 답할 수 있음\n"
     "  · 0.5 미만: 검색된 조문이 질문과 무관하거나 근거가 없음(이때만 모른다고 답)\n"
+    "- ★질문에 타 분야(노동·주택·금융) 내용이 섞여 있어도 그 부분은 무시하고, "
+    "소비자 쟁점만 기준으로 답·confidence를 정하세요(섞였다는 이유로 confidence를 낮추지 말 것).\n"
     "- 단정적 법률 자문이 아니라 법령 안내입니다.\n"
     "- 청년이 이해할 쉬운 말로 4~6문장.\n\n"
     "[검색된 조문]\n{context}\n\n"
@@ -94,7 +97,7 @@ def _llm_answer(query: str, chunks: list[RetrievedChunk]) -> tuple[str, float] |
 
 
 def consumer_agent(state: LegalState) -> dict:
-    query = state["user_query"]
+    query = domain_query(state, "consumer")  # 멀티도메인 분해 시 consumer 조각(없으면 전체질문)
     chunks = safe_search(_rag, query, k=3)  # 베이스: 검색 크래시 방지(빈 리스트 폴백)
 
     if not chunks:

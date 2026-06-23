@@ -25,6 +25,7 @@ TODO 우선순위 (담당 D)
 """
 from common.base_agent_answer import (
     build_domain_answer,
+    domain_query,
     domain_result,
     extractive_answer,
     safe_search,
@@ -51,8 +52,14 @@ _ANSWER_PROMPT = (
     "- 다음: 근거 조문의 요건·효과를 구체적으로 — 기한·대상·절차·금액이 "
     "조문에 있으면 그 표현/수치 그대로.\n"
     "- 마지막: 청년이 이해할 쉬운 말로 한두 문장 풀이.\n"
-    "- 조문에 없는 내용·수치·기관명 지어내기 금지. 조문만으로 부족하면 "
-    "그 사실을 밝히고 confidence를 0.5 미만으로.\n"
+    "- 조문에 없는 내용·수치·기관명 지어내기 금지.\n"
+    "- confidence는 '질문의 금융·채무 쟁점에 대한 답이 위 조문에 근거하는 정도'입니다"
+    "(질문 난이도·확신도가 아님):\n"
+    "  · 0.7 이상: 금융·채무 쟁점에 답할 근거가 위 조문에 분명히 있음\n"
+    "  · 0.5~0.7: 부분적으로 근거가 있어 일부라도 답할 수 있음\n"
+    "  · 0.5 미만: 위 조문이 질문의 금융·채무 쟁점과 무관함\n"
+    "- ★질문에 타 분야(노동·주택·소비자) 내용이 섞여 있어도 그 부분은 무시하고, 금융·채무\n"
+    "  쟁점만 기준으로 답·confidence를 정하세요(섞였다는 이유로 confidence를 낮추지 말 것).\n"
     "- 군더더기·일반론·과한 면책 문구는 빼고 핵심만 3~5문장. 투자 조언이 아니라 법령 안내이며,\n"
     "  단정적 자문 표현은 피하되 법령 용어는 정확히 쓰세요.\n\n"
     "[검색된 조문]\n{context}\n\n"
@@ -86,7 +93,7 @@ def _llm_answer(query: str, chunks: list[RetrievedChunk]) -> tuple[str, float] |
 
 
 def finance_agent(state: LegalState) -> dict:
-    query = state["user_query"]
+    query = domain_query(state, "finance")  # 멀티도메인 분해 시 finance 조각(없으면 전체질문)
     # 검색기는 common/rag(BM25+임베딩 하이브리드). 평어→법률용어 쿼리확장은
     # rag.search 내부(synonyms/finance.jsonl)에서 수행 — 여기선 원질의만 넘긴다
     # (이중 확장 방지). 확장은 검색 입력에만 영향, 답변·인용은 원문 기준.

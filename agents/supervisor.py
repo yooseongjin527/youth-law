@@ -52,9 +52,54 @@ _CLASSIFY_PROMPT = (
 )
 
 
+# ★ 멀티도메인 질문 분해 프롬프트 ★ — 2개+ 분야로 분류된 질문을 분야별 독립 질의로 쪼갠다.
+# 왜: fan-out된 전문가가 모두 '질문 전체'로 검색·답변하면, 비주력 분야는 cross-domain
+# 노이즈(예: finance 입장에서 '월급·해고·보증금')에 검색·confidence가 희석돼 verifier
+# 0.5 컷에서 조용히 탈락한다. 각 전문가에게 자기 조각만 주면 단일질문 수준 품질로 복원된다.
+_DECOMPOSE_PROMPT = (
+    "당신은 청년 생활법률 상담의 '질문 분해기'입니다.\n"
+    "사용자 질문에 여러 분야가 섞여 있습니다. 각 분야 전문가가 자기 분야 조문만으로\n"
+    "검색·답변할 수 있도록, 질문을 분야별 독립 질문으로 쪼개세요.\n\n"
+    "규칙:\n"
+    "- 대상 분야: {domains} (이 분야들만 키로 사용).\n"
+    "- 각 분야 값: 그 분야와 관련된 부분만 골라, 그 분야만 묻는 완결된 한국어 질문으로.\n"
+    "- 다른 분야 내용은 절대 넣지 마세요(노이즈 제거가 목적).\n"
+    "- 어떤 분야로 쪼갤 내용이 마땅찮으면 그 분야 키는 생략(전체질문으로 폴백됨).\n\n"
+    "예시:\n"
+    '질문: "월급도 못 받고 해고됐는데 사채 빚 독촉도 받고 기숙사 보증금도 못 받았어요"\n'
+    '분야: ["labor","housing","finance"]\n'
+    '→ {{"subqueries": {{'
+    '"labor":"월급을 못 받고 해고됐는데 어떻게 대응하나요?",'
+    '"housing":"기숙사 보증금을 못 받았는데 어떻게 돌려받나요?",'
+    '"finance":"사채 빚 독촉에 시달리는데 불법 추심은 어떻게 대응하나요?"}}}}\n\n'
+    '질문: "{query}"\n'
+    "분야: {domains}\n"
+    'JSON으로만 답하세요: {{"subqueries": {{"<분야>": "<해당 분야만 묻는 질문>", ...}}}}'
+)
+
+
 def _classify_keyword(query: str) -> list[str]:
     """폴백: 키워드 substring 매칭."""
     return [d for d, kws in _KEYWORDS.items() if any(k in query for k in kws)]
+
+
+def _decompose_bedrock(query: str, domains: list[str]) -> dict[str, str]:
+    """2개+ 분야로 분류된 질문을 분야별 독립 서브질의로 분해.
+    매칭된 분야 중 비어있지 않은 문자열만 채택(환각 분야명·빈값 방어).
+    실패 시 예외 → 호출부가 빈 dict로 폴백(전문가는 전체질문 사용)."""
+    from common.llm import call_bedrock_json
+
+    data = call_bedrock_json(
+        _DECOMPOSE_PROMPT.format(query=query, domains=domains),
+        required_keys=["subqueries"],
+        task="classify",   # 단순 추출 작업 → 저비용 분류 티어
+    )
+    raw = data.get("subqueries") or {}
+    return {
+        d: raw[d].strip()
+        for d in domains
+        if isinstance(raw.get(d), str) and raw[d].strip()
+    }
 
 
 def _classify_bedrock(query: str) -> tuple[list[str], float]:
@@ -77,9 +122,11 @@ def supervisor_agent(state: LegalState) -> dict:
     try:
         matched, conf = _classify_bedrock(query)
         mode = f"bedrock(conf={conf:.2f})"
+        llm_ok = True
     except Exception:
         matched = _classify_keyword(query)  # 오프라인/실패 폴백
         mode = "keyword"
+        llm_ok = False                       # LLM 불가 → 분해도 생략(폴백)
 
     # 백스톱: Bedrock이 빈 배열(범위 밖)로 판단했어도 분야 키워드가 뚜렷하면 구제한다.
     # 진짜 법률 질문을 false out_of_scope로 거절하는 게 최악(신뢰성↓) — 분류 비결정성 방어.
@@ -93,12 +140,25 @@ def supervisor_agent(state: LegalState) -> dict:
         return {
             "target_domains": [],
             "in_scope": False,
+            "domain_queries": {},
             "messages": [f"[supervisor] 범위 밖 — out_of_scope ({mode})"],
         }
+
+    # 멀티도메인(2개+)만 분야별 서브질의로 분해 → 전문가별 노이즈 희석 방지.
+    # 단일 분야는 분해 무의미(전체=조각)하고, LLM 불가 모드면 분해도 실패하므로 생략.
+    # 분해 실패는 빈 맵으로 폴백 — 전문가가 전체질문으로 동작(현행 동작 보존).
+    domain_queries: dict[str, str] = {}
+    if llm_ok and len(matched) >= 2:
+        try:
+            domain_queries = _decompose_bedrock(query, matched)
+        except Exception:
+            domain_queries = {}
+    decomp = f" | 분해 {list(domain_queries)}" if domain_queries else ""
     return {
         "target_domains": matched,
         "in_scope": True,
-        "messages": [f"[supervisor] 자동 분류 {matched} ({mode})"],
+        "domain_queries": domain_queries,
+        "messages": [f"[supervisor] 자동 분류 {matched} ({mode}){decomp}"],
     }
 
 
