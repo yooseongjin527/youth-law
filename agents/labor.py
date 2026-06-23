@@ -15,6 +15,7 @@
 """
 from common.base_agent_answer import (
     build_domain_answer,
+    domain_query,
     domain_result,
     extractive_answer,
     safe_search,
@@ -65,7 +66,7 @@ def _format_context(chunks: list[dict]) -> str:
 
 def labor_agent(state: LegalState) -> dict:
     """노동 분야 전문가 노드 — 하이브리드 검색 + 답변-근거 가지치기."""
-    query = state["user_query"]
+    query = domain_query(state, "labor")  # 멀티도메인 분해 시 labor 조각(없으면 전체질문)
     chunks = safe_search(_rag, query, k=3)  # 베이스: 검색 크래시 방지
 
     used: list[int] | None = None

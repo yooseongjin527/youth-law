@@ -37,6 +37,15 @@ _NO_CHUNKS = (
     "아래 공식 기관 상담을 권합니다."
 )
 
+def domain_query(state: LegalState, domain: str) -> str:
+    """이 분야 전문가가 검색·답변에 쓸 질의를 고른다.
+
+    Supervisor가 멀티도메인 질문을 분야별 서브질의로 분해했으면(state["domain_queries"])
+    이 분야 조각만 돌려준다 → cross-domain 노이즈로 인한 검색·confidence 희석을 막는다.
+    분해가 없거나(단일 분야·LLM 폴백) 이 분야 조각이 없으면 전체 질문으로 폴백(하위호환)."""
+    sub = (state.get("domain_queries") or {}).get(domain)
+    return sub or state["user_query"]
+
 
 def safe_search(rag, query: str, k: int = 3, law: str | None = None) -> list[dict]:
     """Run domain RAG without letting retrieval failures crash the graph.
@@ -126,7 +135,7 @@ def run_domain_agent(
     prompt_template 플레이스홀더: {query}, {context}
     return: {"domain_answers": [DomainAnswer], "messages": [...]} (계약 통일)
     """
-    query = state["user_query"]
+    query = domain_query(state, domain)  # 멀티도메인 분해 시 분야별 서브질의(없으면 전체질문)
 
     # 1) RAG 검색 — 실패해도 그래프를 죽이지 않게 빈 리스트로 폴백.
     chunks = safe_search(rag, query, k=search_k)

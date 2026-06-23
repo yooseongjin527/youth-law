@@ -31,6 +31,7 @@ def get_graph():
 def init_state(question: str) -> dict:
     return {
         "user_query": question, "target_domains": [], "in_scope": True,
+        "domain_queries": None,
         "domain_answers": [], "verified_answers": None,
         "verification_report": None, "answer_blocks": None, "messages": [],
     }

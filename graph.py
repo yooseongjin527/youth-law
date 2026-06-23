@@ -50,6 +50,7 @@ if __name__ == "__main__":
     def run(q):
         return app.invoke({
             "user_query": q, "target_domains": [], "in_scope": True,
+            "domain_queries": None,
             "domain_answers": [], "verified_answers": None,
             "verification_report": None, "answer_blocks": None, "messages": [],
         })

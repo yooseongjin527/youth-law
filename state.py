@@ -58,6 +58,9 @@ class LegalState(TypedDict):
     # --- 라우팅 제어 (Supervisor 전용 쓰기) ---
     target_domains: list[str]        # 매칭된 분야들. 예: ["labor","housing"]
     in_scope: bool                   # 4분야 안에 드는 질문인지
+    # 멀티도메인 분해: {분야: 서브질의}. 2개+ 분야일 때만 채움. 없으면(None/{}) 전문가는
+    # user_query 전체로 폴백(하위호환). 각 전문가가 자기 조각만 검색·답변해 노이즈 희석 방지.
+    domain_queries: Optional[dict]
 
     # --- 각 분야 전문가 결과 (담당자만 자기 분야 1건 append) ---
     domain_answers: Annotated[list[DomainAnswer], add]
